@@ -1,0 +1,57 @@
+---
+title: UE5 GAS 技能系统入门踩坑记
+date: 2026-08-12
+category: tech
+tags: [UE5, GAS, C++]
+summary: 第一次用 GameplayAbilitySystem 做技能系统，把 Asc、GA、GE 三个概念啃下来之后，回头看踩过的坑其实都挺典型。
+---
+
+最近把手头的一个 UE5 小项目从手写技能逻辑迁移到了 GAS（GameplayAbilitySystem）。网上资料不少，但真正上手才知道坑在哪里。把过程记下来，给同样刚开始折腾 GAS 的朋友省点时间。
+
+## 先把三个概念焊死在脑子里
+
+GAS 的核心就三个东西，但一开始很容易混：
+
+- **AbilitySystemComponent（ASC）**：技能系统的「入口」，挂在 Actor 上，所有技能、属性、效果都通过它走。
+- **GameplayAbility（GA）**：一个技能本体，比如「冲刺」「放火球」，负责逻辑和流程控制。
+- **GameplayEffect（GE）**：数据和效果的载体，改属性、上 buff、掉血，全是 GE。
+
+一句话总结：**GA 决定「做什么」，GE 决定「改什么」，ASC 负责「撮合」**。
+
+## 坑一：AttributeSet 忘了注册
+
+最开始我给角色加了自定义的 `UMyAttributeSet`，但健康值怎么都不对。排查了半天，发现是创建 ASC 之后忘了把 AttributeSet 注册进去：
+
+```cpp
+AbilitySystemComponent = CreateDefaultSubobject<UMyAbilitySystemComponent>(TEXT("AbilitySystem"));
+AbilitySystemComponent->SetIsReplicated(true);
+// 关键：把 AttributeSet 交给 ASC 托管，漏了这步属性全都不生效
+AbilitySystemComponent->InitAbilityActorInfo(this, this);
+MyAttributeSet = CreateDefaultSubobject<UMyAttributeSet>(TEXT("AttributeSet"));
+```
+
+> 建议：把 ASC 初始化相关的代码集中写在一个函数里，散在各处的话，迟早漏一步。
+
+## 坑二： GameplayTag 判断时机不对
+
+用 GA 的时候经常需要判断「角色当前是不是在某个状态」，比如眩晕中不能移动。我一上来就在 Tick 里轮询，后来才反应过来应该用 GameplayTag 的事件回调：
+
+1. 眩晕 GE 添加时打上 `State.Stunned` 标签；
+2. GA 里监听标签的添加和移除；
+3. 标签出现时自动 Cancel 掉移动相关的 GA。
+
+这样逻辑是事件驱动的，不需要任何轮询，性能和可读性都好很多。
+
+## 坑三：在客户端预测上偷懒
+
+GAS 的客户端预测（Prediction）是它的卖点，但配置起来很啰嗦。我的教训是：**先在服务端模式下把技能跑通，再逐个打开预测**。一上来就全开预测，出了 bug 根本分不清是逻辑问题还是预测问题。
+
+| 阶段 | 做法 | 目的 |
+| --- | --- | --- |
+| 第一步 | Listen Server 跑通逻辑 | 验证技能设计 |
+| 第二步 | 打开 GA 的 InstancedPerActor 预测 | 验证手感 |
+| 第三步 | 处理预测回滚的表现 | 打磨体验 |
+
+## 小结
+
+GAS 上手曲线陡，但它把「技能」这件事拆得很干净。踩完这三个坑之后，我对它的评价从「怎么这么麻烦」变成了「早该这么写」。下一篇打算写 GE 和 GameplayCue 的配合，有兴趣的朋友可以关注一下。

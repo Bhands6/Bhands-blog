@@ -1,0 +1,47 @@
+---
+title: "Getting Started with UE5 GAS: Pitfalls I Hit"
+date: 2026-08-12
+category: tech
+tags: [UE5, GAS, C++]
+summary: My first pass at GameplayAbilitySystem — once ASC, GA and GE finally clicked, every bug I hit turned out to be a classic one.
+---
+
+I recently migrated a small UE5 project from hand-rolled skill logic to GAS (GameplayAbilitySystem). There is plenty of material out there, but the real pitfalls only show up once you start. This is my notes-to-self so the next person saves a few hours.
+
+## Nail down the three core concepts first
+
+GAS has three building blocks, and they are easy to confuse at the start:
+
+- **AbilitySystemComponent (ASC)**: the entry point, attached to an Actor. Everything flows through it.
+- **GameplayAbility (GA)**: a skill itself — dash, fireball — owning logic and flow control.
+- **GameplayEffect (GE)**: the data carrier. Attribute changes, buffs, damage — all GEs.
+
+One line to remember: **GA decides what to do, GE decides what to change, ASC makes the match.**
+
+## Pitfall 1: forgot to register the AttributeSet
+
+I added a custom `UMyAttributeSet` to the character but health values never behaved. After way too long I found I never handed the set over to the ASC:
+
+```cpp
+AbilitySystemComponent = CreateDefaultSubobject<UMyAbilitySystemComponent>(TEXT("AbilitySystem"));
+AbilitySystemComponent->SetIsReplicated(true);
+// Critical: hand the AttributeSet to the ASC, otherwise nothing works
+AbilitySystemComponent->InitAbilityActorInfo(this, this);
+MyAttributeSet = CreateDefaultSubobject<UMyAttributeSet>(TEXT("AttributeSet"));
+```
+
+> Advice: keep all ASC initialization in one function. If it is scattered, you will eventually miss a step.
+
+## Pitfall 2: polling instead of GameplayTags
+
+Checking "is the character stunned" via Tick polling is a trap. The right way is event-driven:
+
+1. The stun GE applies the `State.Stunned` tag;
+2. GAs listen for tag add and remove events;
+3. When the tag appears, cancel movement-related GAs automatically.
+
+No polling anywhere, and both performance and readability win.
+
+## Wrapping up
+
+GAS has a steep curve, but it decomposes "skills" cleanly. After these pitfalls my verdict flipped from "why is this so complicated" to "things should have always been built this way". Next post will cover GE and GameplayCue working together.
