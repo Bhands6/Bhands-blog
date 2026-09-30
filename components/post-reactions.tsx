@@ -14,14 +14,9 @@ export default function PostReactions({ lang, slug }: { lang: string; slug: stri
   const [busy, setBusy] = useState(false);
 
   const loadStats = useCallback(async () => {
-    const auth = getAuth();
     const url = `/api/v1/posts/${lang}/${slug}/like`;
     try {
-      const res = auth
-        ? ((await fetch(url, { headers: { Authorization: `Bearer ${auth.accessToken}` } }).catch(
-            () => null,
-          )) ?? (await fetch(url)))
-        : await fetch(url);
+      const res = await fetch(url); // Cookie 自动携带，服务端识别登录态
       if (!res?.ok) return;
       const data = (await res.json()) as { liked: boolean; count: number; views: number };
       setLiked(data.liked);

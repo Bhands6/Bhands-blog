@@ -3,7 +3,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { Dict } from "@/lib/i18n";
-import { setAuth } from "@/lib/auth-client";
+import { setAuthUser, type AuthUser } from "@/lib/auth-client";
 
 type AuthLabels = Dict["auth"]["card"];
 
@@ -65,18 +65,17 @@ export default function AuthPanel({ labels, lang }: { labels: AuthLabels; lang: 
         body: JSON.stringify(payload),
       });
       const data = (await res.json().catch(() => ({}))) as {
-        accessToken?: string;
-        refreshToken?: string;
-        user?: AuthState["user"];
+        user?: AuthUser;
         code?: string;
         error?: string;
       };
-      if (!res.ok || !data.accessToken || !data.refreshToken || !data.user) {
+      if (!res.ok || !data.user) {
         showError(data.code, data.error ?? "");
         setBusy(false);
         return;
       }
-      setAuth({ accessToken: data.accessToken, refreshToken: data.refreshToken, user: data.user });
+      // 会话凭证在 httpOnly Cookie 里由服务端下发，前端只记录用户资料
+      setAuthUser(data.user);
       setDone(true);
       timers.current.push(
         setTimeout(() => {
@@ -302,4 +301,3 @@ export default function AuthPanel({ labels, lang }: { labels: AuthLabels; lang: 
   );
 }
 
-type AuthState = import("@/lib/auth-client").AuthState;

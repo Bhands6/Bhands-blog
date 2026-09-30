@@ -1,25 +1,28 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { generateRefreshToken, getRefreshToken, signAccessToken, storeRefreshToken } from "@/lib/auth";
-
-const schema = z.object({ refreshToken: z.string().min(16) });
+import {
+  applySessionCookies,
+  generateRefreshToken,
+  getRefreshToken,
+  getSessionRefreshToken,
+  signAccessToken,
+  storeRefreshToken,
+} from "@/lib/auth";
 
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => null);
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "缺少 refreshToken", code: "SESSION_EXPIRED" }, { status: 400 });
+  const refreshToken = getSessionRefreshToken(req);
+  if (!refreshToken) {
+    return NextResponse.json({ error: "登录态已失效，请重新登录", code: "SESSION_EXPIRED" }, { status: 401 });
   }
 
-  // refreshToken 形如 "{uid}.{secret}"，可直接定位白名单条目
-  const dot = parsed.data.refreshToken.indexOf(".");
+  // token 形如 "{uid}.{secret}"，可直接定位 Redis 白名单条目
+  const dot = refreshToken.indexOf(".");
   if (dot <= 0) {
-    return NextResponse.json({ error: "登录态已失效", code: "SESSION_EXPIRED" }, { status: 401 });
+    return NextResponse.json({ error: "登录态已失效，请重新登录", code: "SESSION_EXPIRED" }, { status: 401 });
   }
-  const uid = parsed.data.refreshToken.slice(0, dot);
+  const uid = refreshToken.slice(0, dot);
   const stored = await getRefreshToken(uid);
-  if (!stored || stored !== parsed.data.refreshToken) {
+  if (!stored || stored !== refreshToken) {
     return NextResponse.json({ error: "登录态已失效，请重新登录", code: "SESSION_EXPIRED" }, { status: 401 });
   }
 
@@ -29,16 +32,15 @@ export async function POST(req: Request) {
   }
 
   // 轮换：旧 refresh 立即作废
-  const refreshToken = `${uid}.${generateRefreshToken()}`;
-  await storeRefreshToken(uid, refreshToken);
+  const rotated = `${uid}.${generateRefreshToken()}`;
+  await storeRefreshToken(uid, rotated);
   const accessToken = await signAccessToken({
     uid,
     username: user.username,
     role: user.role,
   });
-  return NextResponse.json({
-    accessToken,
-    refreshToken,
+
+  const res = NextResponse.json({
     user: {
       id: user.id.toString(),
       username: user.username,
@@ -47,4 +49,6 @@ export async function POST(req: Request) {
       avatarUrl: user.avatarUrl,
     },
   });
+  applySessionCookies(res, { accessToken, refreshToken: rotated });
+  return res;
 }

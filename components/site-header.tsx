@@ -58,7 +58,7 @@ export default function SiteHeader({ lang }: { lang: Lang }) {
             </Link>
           </li>
         ))}
-        {user?.user.role === "ADMIN" && (
+        {user?.role === "ADMIN" && (
           <li>
             <Link
               href={`/${lang}/admin`}
@@ -71,9 +71,9 @@ export default function SiteHeader({ lang }: { lang: Lang }) {
         {user ? (
           <>
             <li>
-              <span className="nx-user-chip" title={user.user.displayName}>
+              <span className="nx-user-chip" title={user.displayName}>
                 <span className="user-dot" aria-hidden="true" />
-                {user.user.displayName}
+                {user.displayName}
               </span>
             </li>
             <li>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { getDict } from "@/lib/i18n";
 import type { Lang } from "@/lib/posts";
-import { authFetch, getAuth, getServerAuth, subscribeAuth, type AuthState } from "@/lib/auth-client";
+import { authFetch, getAuth, getServerAuth, subscribeAuth, type AuthUser } from "@/lib/auth-client";
 
 type Labels = ReturnType<typeof getDict>["comments"];
 
@@ -32,12 +32,12 @@ function CommentCard({
 }: {
   item: CommentItem;
   labels: Labels;
-  user: AuthState | null;
+  user: AuthUser | null;
   onReply: (item: CommentItem) => void;
   onDelete: (item: CommentItem) => void;
   isReply?: boolean;
 }) {
-  const canDelete = user && (user.user.id === item.user.id || user.user.role === "ADMIN");
+  const canDelete = user && (user.id === item.user.id || user.role === "ADMIN");
   return (
     <div className={`comment-card ${isReply ? "is-reply" : ""}`}>
       <div className="comment-avatar" aria-hidden="true">

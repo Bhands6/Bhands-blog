@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { issueSession, publicUser, verifyPassword } from "@/lib/auth";
+import { applySessionCookies, issueSession, publicUser, verifyPassword } from "@/lib/auth";
 
 const schema = z.object({
   account: z.string().min(1).max(120), // 用户名或邮箱
@@ -27,5 +27,7 @@ export async function POST(req: Request) {
   }
 
   const tokens = await issueSession(user);
-  return NextResponse.json({ ...tokens, user: publicUser(user) });
+  const res = NextResponse.json({ user: publicUser(user) });
+  applySessionCookies(res, tokens);
+  return res;
 }

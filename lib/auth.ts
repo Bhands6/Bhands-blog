@@ -1,8 +1,8 @@
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import type { User } from "@prisma/client";
+import type { NextResponse } from "next/server";
 import { redis } from "./redis";
-
 const ACCESS_TTL = "15m";
 export const REFRESH_TTL_SECONDS = 7 * 24 * 3600;
 
@@ -42,20 +42,6 @@ export async function verifyAccessToken(token: string): Promise<AccessPayload | 
 }
 
 /** 从请求头解析 Bearer JWT；未登录返回 null */
-export async function getAuthPayload(req: Request): Promise<AccessPayload | null> {
-  const header = req.headers.get("authorization") ?? "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
-  if (!token) return null;
-  return verifyAccessToken(token);
-}
-
-/** 管理员守卫；非 ADMIN 返回 null */
-export async function getAdminPayload(req: Request): Promise<AccessPayload | null> {
-  const payload = await getAuthPayload(req);
-  if (!payload || payload.role !== "ADMIN") return null;
-  return payload;
-}
-
 export function generateRefreshToken() {
   return crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", "");
 }
@@ -93,3 +79,65 @@ export function publicUser(u: User) {
     avatarUrl: u.avatarUrl,
   };
 }
+
+/* ── httpOnly Cookie 会话 ─────────────────────────────────────
+   nx_at：access JWT（15 分钟）；nx_rt：refresh token（7 天，Redis 白名单）。
+   SameSite=Lax + 校验过的 JSON 响应体，CSRF 风险可接受（博客场景）。
+   ============================================================ */
+export const ACCESS_COOKIE = "nx_at";
+export const REFRESH_COOKIE = "nx_rt";
+
+const cookieBase = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  path: "/",
+  secure: process.env.NODE_ENV === "production",
+};
+
+export function getCookie(req: Request, name: string): string | null {
+  const header = req.headers.get("cookie");
+  if (!header) return null;
+  for (const part of header.split(";")) {
+    const idx = part.indexOf("=");
+    if (idx === -1) continue;
+    if (part.slice(0, idx).trim() === name) {
+      return decodeURIComponent(part.slice(idx + 1).trim());
+    }
+  }
+  return null;
+}
+
+function bearerToken(req: Request): string | null {
+  const header = req.headers.get("authorization") ?? "";
+  return header.startsWith("Bearer ") ? header.slice(7) : null;
+}
+
+export async function getAuthPayload(req: Request): Promise<AccessPayload | null> {
+  const token = getCookie(req, ACCESS_COOKIE) ?? bearerToken(req);
+  if (!token) return null;
+  return verifyAccessToken(token);
+}
+
+export async function getAdminPayload(req: Request): Promise<AccessPayload | null> {
+  const payload = await getAuthPayload(req);
+  if (!payload || payload.role !== "ADMIN") return null;
+  return payload;
+}
+
+export function getSessionRefreshToken(req: Request): string | null {
+  return getCookie(req, REFRESH_COOKIE) ?? bearerToken(req);
+}
+
+export function applySessionCookies(
+  res: NextResponse,
+  tokens: { accessToken: string; refreshToken: string },
+) {
+  res.cookies.set({ name: ACCESS_COOKIE, value: tokens.accessToken, ...cookieBase, maxAge: 900 });
+  res.cookies.set({ name: REFRESH_COOKIE, value: tokens.refreshToken, ...cookieBase, maxAge: REFRESH_TTL_SECONDS });
+}
+
+export function clearSessionCookies(res: NextResponse) {
+  res.cookies.set({ name: ACCESS_COOKIE, value: "", ...cookieBase, maxAge: 0 });
+  res.cookies.set({ name: REFRESH_COOKIE, value: "", ...cookieBase, maxAge: 0 });
+}
+

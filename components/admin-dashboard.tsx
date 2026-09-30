@@ -44,7 +44,7 @@ export default function AdminDashboard({ lang }: { lang: Lang }) {
   const t = getDict(lang).admin;
   const nav = getDict(lang);
   const user = useSyncExternalStore(subscribeAuth, getAuth, getServerAuth);
-  const isAdmin = user?.user.role === "ADMIN";
+  const isAdmin = user?.role === "ADMIN";
 
   const [tab, setTab] = useState<"comments" | "users">("comments");
   const [stats, setStats] = useState<{ users: number; comments: number; likes: number; views: number } | null>(null);
@@ -268,7 +268,7 @@ export default function AdminDashboard({ lang }: { lang: Lang }) {
                 </span>
               </span>
               <span className="admin-actions">
-                {u.id !== user?.user.id &&
+                {u.id !== user?.id &&
                   (u.status === 1 ? (
                     <button type="button" className="danger" onClick={() => void patchUser(u.id, 0)}>
                       {t.actions.ban}

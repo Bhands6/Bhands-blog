@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { hashPassword, issueSession, publicUser } from "@/lib/auth";
+import { applySessionCookies, hashPassword, issueSession, publicUser } from "@/lib/auth";
 
 const schema = z.object({
   username: z.string().min(2).max(20),
@@ -35,7 +35,9 @@ export async function POST(req: Request) {
       },
     });
     const tokens = await issueSession(user);
-    return NextResponse.json({ ...tokens, user: publicUser(user) }, { status: 201 });
+    const res = NextResponse.json({ user: publicUser(user) }, { status: 201 });
+    applySessionCookies(res, tokens);
+    return res;
   } catch {
     return NextResponse.json({ error: "注册失败，请稍后再试", code: "SERVER_ERROR" }, { status: 500 });
   }
