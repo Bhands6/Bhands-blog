@@ -49,13 +49,13 @@ export default async function AboutPage({
                   href={site.socials.github}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-full border border-line px-5 py-2.5 text-sm text-dim transition-colors hover:border-white hover:text-white"
+                  className="rounded-full border border-line px-5 py-2.5 text-sm text-dim transition-colors hover:border-cyan hover:text-cyan"
                 >
                   GitHub
                 </a>
                 <a
                   href={site.socials.email}
-                  className="rounded-full border border-line px-5 py-2.5 text-sm text-dim transition-colors hover:border-white hover:text-white"
+                  className="rounded-full border border-line px-5 py-2.5 text-sm text-dim transition-colors hover:border-cyan hover:text-cyan"
                 >
                   Email
                 </a>

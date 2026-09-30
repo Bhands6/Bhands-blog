@@ -72,7 +72,19 @@ interface Star {
   a: number;
   tw: number;
   phase: number;
+  color: string;
 }
+
+interface Meteor {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  max: number;
+}
+
+const STAR_COLORS = ["#cfe9ff", "#cfe9ff", "#cfe9ff", "#7debff", "#a5b4fc", "#f0abfc"];
 
 export default function PortalExperience({ lang, latest, categories, aboutHref, labels }: Props) {
   const router = useRouter();
@@ -100,6 +112,8 @@ export default function PortalExperience({ lang, latest, categories, aboutHref, 
     busy: false,
     reduced: false,
     stars: [] as Star[],
+    meteors: [] as Meteor[],
+    nextMeteor: 2200,
   });
 
   useEffect(() => {
@@ -122,6 +136,7 @@ export default function PortalExperience({ lang, latest, categories, aboutHref, 
         a: 0.15 + Math.random() * 0.75,
         tw: 0.4 + Math.random() * 1.6,
         phase: Math.random() * Math.PI * 2,
+        color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
       }));
     };
     makeStars();
@@ -209,20 +224,25 @@ export default function PortalExperience({ lang, latest, categories, aboutHref, 
     // ---------- 渲染循环 ----------
     let raf = 0;
     let last = performance.now();
-    const drawStarfield = (ctx: CanvasRenderingContext2D, time: number) => {
+    const drawStarfield = (ctx: CanvasRenderingContext2D, time: number, dt: number) => {
       const W = window.innerWidth;
       const H = window.innerHeight;
       ctx.clearRect(0, 0, W, H);
-      // 微弱星云
-      const blob = (bx: number, by: number, br: number, alpha: number) => {
+
+      // 蓝紫星云
+      ctx.globalCompositeOperation = "screen";
+      const blob = (bx: number, by: number, br: number, color: string, alpha: number) => {
         const g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-        g.addColorStop(0, `rgba(255,255,255,${alpha})`);
-        g.addColorStop(1, "rgba(255,255,255,0)");
+        g.addColorStop(0, color.replace("ALPHA", String(alpha)));
+        g.addColorStop(1, color.replace("ALPHA", "0"));
         ctx.fillStyle = g;
         ctx.fillRect(bx - br, by - br, br * 2, br * 2);
       };
-      blob(W * (0.72 - s.parX * 0.02), H * 0.24, H * 0.5, 0.045);
-      blob(W * (0.18 - s.parX * 0.01), H * 0.8, H * 0.42, 0.035);
+      blob(W * (0.74 - s.parX * 0.02), H * 0.22, H * 0.52, "rgba(56,130,246,ALPHA)", 0.07);
+      blob(W * (0.16 - s.parX * 0.01), H * 0.78, H * 0.44, "rgba(139,92,246,ALPHA)", 0.06);
+      blob(W * (0.5 + s.parX * 0.01), H * 0.5, H * 0.36, "rgba(0,229,255,ALPHA)", 0.035);
+      ctx.globalCompositeOperation = "source-over";
+
       // 星星
       for (const star of s.stars) {
         const twinkle = 0.6 + 0.4 * Math.sin(time * 0.001 * star.tw + star.phase);
@@ -230,34 +250,136 @@ export default function PortalExperience({ lang, latest, categories, aboutHref, 
         const x = (star.x * W - s.parX * 26 * depth + time * 0.0016 * depth) % W;
         const y = (star.y * H - s.parY * 18 * depth) % H;
         ctx.globalAlpha = star.a * twinkle;
-        ctx.fillStyle = "#fff";
+        ctx.fillStyle = star.color;
         ctx.beginPath();
         ctx.arc((x + W) % W, (y + H) % H, star.r, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
+
+      // 流星
+      if (!s.reduced) {
+        if (time > s.nextMeteor) {
+          s.meteors.push({
+            x: W * (0.15 + Math.random() * 0.75),
+            y: H * (0.05 + Math.random() * 0.35),
+            vx: -(3.2 + Math.random() * 3),
+            vy: 1.8 + Math.random() * 1.6,
+            life: 0,
+            max: 700 + Math.random() * 500,
+          });
+          s.nextMeteor = time + 3800 + Math.random() * 4200;
+        }
+        const step = dt / 16.7;
+        s.meteors = s.meteors.filter((m) => m.life < m.max);
+        for (const m of s.meteors) {
+          m.x += m.vx * step;
+          m.y += m.vy * step;
+          m.life += dt;
+          const fade = 1 - m.life / m.max;
+          const tailX = m.x - m.vx * 9;
+          const tailY = m.y - m.vy * 9;
+          const g = ctx.createLinearGradient(m.x, m.y, tailX, tailY);
+          g.addColorStop(0, `rgba(230,250,255,${0.9 * fade})`);
+          g.addColorStop(1, "rgba(0,229,255,0)");
+          ctx.strokeStyle = g;
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(m.x, m.y);
+          ctx.lineTo(tailX, tailY);
+          ctx.stroke();
+        }
+      }
+
+      // 透视网格地平线（赛博地面）
+      const horizon = H * 0.68;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, horizon, W, H - horizon);
+      ctx.clip();
+      ctx.globalCompositeOperation = "screen";
+      // 地平线辉光带
+      const hg = ctx.createLinearGradient(0, horizon - 26, 0, horizon + 60);
+      hg.addColorStop(0, "rgba(0,229,255,0)");
+      hg.addColorStop(0.45, "rgba(0,229,255,0.14)");
+      hg.addColorStop(1, "rgba(139,92,246,0)");
+      ctx.fillStyle = hg;
+      ctx.fillRect(0, horizon - 26, W, 90);
+      // 纵向线：向灭点汇聚
+      for (let i = -12; i <= 12; i++) {
+        const xh = W / 2 + i * (W * 0.014);
+        const xb = W / 2 + i * (W * 0.09);
+        ctx.strokeStyle = `rgba(0,229,255,${i === 0 ? 0.16 : 0.07})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(xh, horizon);
+        ctx.lineTo(xb, H);
+        ctx.stroke();
+      }
+      // 横向线：向观者推进
+      const speed = ((time * 0.00022) % 1 + 1) % 1;
+      for (let j = 0; j < 9; j++) {
+        const p = (j + speed) / 9;
+        const y = horizon + (H - horizon) * p * p;
+        ctx.strokeStyle = `rgba(0,229,255,${0.02 + p * 0.1})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.globalCompositeOperation = "source-over";
     };
 
-    const drawPortalMedia = (ctx: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number, intensity: number) => {
-      ctx.fillStyle = "#030303";
+    const drawPortalMedia = (
+      ctx: CanvasRenderingContext2D,
+      cx: number,
+      cy: number,
+      w: number,
+      h: number,
+      intensity: number,
+      time: number
+    ) => {
+      ctx.fillStyle = "#020412";
       ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
       const R = Math.max(w, h);
-      const g1 = ctx.createRadialGradient(cx, cy - h * 0.08, 0, cx, cy - h * 0.08, R * 0.62);
-      g1.addColorStop(0, `rgba(255,255,255,${0.14 + 0.1 * intensity})`);
-      g1.addColorStop(1, "rgba(255,255,255,0)");
+      const t = time * 0.001;
+
+      ctx.globalCompositeOperation = "screen";
+      // 对转的青/紫能量云
+      const ang = t * 0.25;
+      const px = cx + Math.cos(ang) * w * 0.18;
+      const py = cy + Math.sin(ang * 1.3) * h * 0.14;
+      const g1 = ctx.createRadialGradient(px, py, 0, px, py, R * 0.55);
+      g1.addColorStop(0, `rgba(0,229,255,${0.2 + 0.12 * intensity})`);
+      g1.addColorStop(1, "rgba(0,229,255,0)");
       ctx.fillStyle = g1;
       ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
-      const g2 = ctx.createRadialGradient(cx - w * 0.22, cy + h * 0.3, 0, cx - w * 0.22, cy + h * 0.3, R * 0.4);
-      g2.addColorStop(0, `rgba(255,196,150,${0.1 + 0.08 * intensity})`);
-      g2.addColorStop(1, "rgba(255,196,150,0)");
+
+      const ang2 = -t * 0.18 + 2.2;
+      const qx = cx + Math.cos(ang2) * w * 0.24;
+      const qy = cy + Math.sin(ang2) * h * 0.2;
+      const g2 = ctx.createRadialGradient(qx, qy, 0, qx, qy, R * 0.48);
+      g2.addColorStop(0, `rgba(139,92,246,${0.24 + 0.1 * intensity})`);
+      g2.addColorStop(1, "rgba(139,92,246,0)");
       ctx.fillStyle = g2;
       ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
+
+      // 高能核心
+      const g3 = ctx.createRadialGradient(cx, cy - h * 0.05, 0, cx, cy - h * 0.05, R * 0.3);
+      g3.addColorStop(0, `rgba(200,245,255,${0.12 + 0.1 * intensity})`);
+      g3.addColorStop(1, "rgba(200,245,255,0)");
+      ctx.fillStyle = g3;
+      ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
+      ctx.globalCompositeOperation = "source-over";
+
       for (const star of s.stars) {
         const x = cx + (star.x - 0.5) * w * 1.4;
         const y = cy + (star.y - 0.5) * h * 1.4;
         if (x < cx - w / 2 || x > cx + w / 2 || y < cy - h / 2 || y > cy + h / 2) continue;
         ctx.globalAlpha = Math.min(1, star.a * (1.5 + intensity * 0.8));
-        ctx.fillStyle = "#fff";
+        ctx.fillStyle = star.color;
         ctx.beginPath();
         ctx.arc(x, y, star.r, 0, Math.PI * 2);
         ctx.fill();
@@ -282,16 +404,15 @@ export default function PortalExperience({ lang, latest, categories, aboutHref, 
       const H = window.innerHeight;
 
       const starCtx = starCanvasRef.current?.getContext("2d");
-      if (starCtx && !s.reduced) {
-        s.parX += (s.pointerX - 0.5 - (s.parX - 0.5)) * 0.04;
-        s.parY += (s.pointerY - 0.5 - (s.parY - 0.5)) * 0.04;
-        drawStarfield(starCtx, now);
-      } else if (starCtx && s.reduced) {
-        drawStarfield(starCtx, 0);
+      if (starCtx) {
+        drawStarfield(starCtx, now, dt);
       }
 
       const ctx = portalCanvasRef.current?.getContext("2d");
       if (ctx) {
+        // 指针视差缓动
+        s.parX += (s.pointerX - s.parX) * 0.04;
+        s.parY += (s.pointerY - s.parY) * 0.04;
         ctx.clearRect(0, 0, W, H);
         const rect = portalBtnRef.current?.getBoundingClientRect();
         if (rect) {
@@ -332,13 +453,23 @@ export default function PortalExperience({ lang, latest, categories, aboutHref, 
             }
             ctx.closePath();
             ctx.clip();
-            drawPortalMedia(ctx, cx, cy, w * 1.05, h * 1.05, e);
+            drawPortalMedia(ctx, cx, cy, w * 1.05, h * 1.05, e, now);
             if (e > 0.02) drawShade(ctx);
             ctx.restore();
-            // 描边微光
-            ctx.strokeStyle = `rgba(255,255,255,${0.5 * (1 - e)})`;
-            ctx.lineWidth = 1;
+            // 霓虹描边：青色辉光 + 紫色外晕
+            ctx.save();
+            ctx.shadowColor = "rgba(139,92,246,0.55)";
+            ctx.shadowBlur = 30;
+            ctx.strokeStyle = `rgba(139,92,246,${0.35 * (1 - e)})`;
+            ctx.lineWidth = 3;
             ctx.stroke();
+            ctx.shadowColor = "rgba(0,229,255,0.95)";
+            ctx.shadowBlur = 14;
+            ctx.strokeStyle = `rgba(0,229,255,${0.8 * (1 - e)})`;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.stroke();
+            ctx.restore();
           }
         }
       }

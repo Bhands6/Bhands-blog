@@ -57,7 +57,7 @@ export default async function PostPage({
     remarkPlugins: [remarkGfm],
     rehypePlugins: [
       rehypeSlug,
-      [rehypeShiki, { theme: "github-dark-default", fallbackLanguage: "plain" }],
+      [rehypeShiki, { theme: "tokyo-night", fallbackLanguage: "plain" }],
     ],
   } as unknown as Parameters<typeof evaluate>[1]);
 
@@ -76,7 +76,7 @@ export default async function PostPage({
             <dd>
               <Link
                 href={`/${lang}/blog?category=${post.category}`}
-                className="underline underline-offset-4 decoration-white/40 hover:decoration-white"
+                className="text-cyan underline underline-offset-4 decoration-cyan/50 hover:decoration-cyan"
               >
                 {t.category[post.category]}
               </Link>
@@ -94,7 +94,7 @@ export default async function PostPage({
                   <Link
                     key={tag}
                     href={`/${lang}/blog?tag=${encodeURIComponent(tag)}`}
-                    className="underline underline-offset-4 decoration-white/40 hover:decoration-white"
+                    className="text-cyan underline underline-offset-4 decoration-cyan/50 hover:decoration-cyan"
                   >
                     #{tag}
                   </Link>

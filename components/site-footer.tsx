@@ -16,14 +16,14 @@ export default function SiteFooter({ lang }: { lang: Lang }) {
             href={site.socials.github}
             target="_blank"
             rel="noreferrer"
-            className="text-faint transition-colors hover:text-white"
+            className="text-faint transition-colors hover:text-cyan"
           >
             GitHub
           </a>
-          <a href={site.socials.email} className="text-faint transition-colors hover:text-white">
+          <a href={site.socials.email} className="text-faint transition-colors hover:text-cyan">
             Email
           </a>
-          <Link href="/feed.xml" className="text-faint transition-colors hover:text-white">
+          <Link href="/feed.xml" className="text-faint transition-colors hover:text-cyan">
             {t.footer.feed}
           </Link>
         </div>

@@ -1,16 +1,18 @@
 @import "tailwindcss";
 
 /* ============================================================
-   深空主题设计 Token（Planet Jumping 风格）
+   赛博星空主题 Token（Cyber Space / Sci-Fi HUD）
    ============================================================ */
 @theme {
-  --color-space: #090807;
-  --color-space-soft: #0a0908;
-  --color-chalk: #ffffff;
-  --color-dim: rgba(255, 255, 255, 0.62);
-  --color-faint: rgba(255, 255, 255, 0.4);
-  --color-line: rgba(255, 255, 255, 0.48);
-  --color-line-soft: rgba(255, 255, 255, 0.16);
+  --color-space: #04060f;
+  --color-space-soft: #0a0d1a;
+  --color-chalk: #eaf2ff;
+  --color-cyan: #00e5ff;
+  --color-violet: #8b5cf6;
+  --color-dim: rgba(214, 232, 255, 0.62);
+  --color-faint: rgba(214, 232, 255, 0.4);
+  --color-line: rgba(0, 229, 255, 0.35);
+  --color-line-soft: rgba(140, 180, 255, 0.14);
   --font-sans:
     "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
@@ -37,8 +39,26 @@
   }
 
   ::selection {
-    background: #fff;
+    background: var(--color-cyan);
     color: #000;
+  }
+
+  /* 扫描线 + 暗角：全站科幻质感层 */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        rgba(160, 220, 255, 0.028) 0px,
+        rgba(160, 220, 255, 0.028) 1px,
+        transparent 1px,
+        transparent 3px
+      ),
+      radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(2, 4, 12, 0.55) 100%);
   }
 
   /* 首页沉浸式体验期间锁滚动 */
@@ -85,22 +105,24 @@
     transform: translate(-50%, -50%);
   }
   .cursor-dot {
-    width: 12px;
-    height: 12px;
-    background: #fff;
+    width: 10px;
+    height: 10px;
+    background: var(--color-cyan);
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.9);
   }
   .cursor-ring {
     width: 36px;
     height: 36px;
-    border: 1px solid rgba(255, 255, 255, 0.9);
-    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(0, 229, 255, 0.85);
+    background: rgba(0, 229, 255, 0.08);
+    box-shadow: 0 0 16px rgba(0, 229, 255, 0.25), inset 0 0 12px rgba(0, 229, 255, 0.15);
     transition:
       transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
       background 0.3s ease;
   }
   .custom-cursor.is-active .cursor-ring {
     transform: translate(-50%, -50%) scale(1.16);
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(0, 229, 255, 0.22);
   }
   .cursor-label {
     position: absolute;
@@ -110,6 +132,8 @@
     font-size: 13px;
     line-height: 1.2;
     white-space: nowrap;
+    color: var(--color-cyan);
+    text-shadow: 0 0 12px rgba(0, 229, 255, 0.8);
     opacity: 0;
     transition:
       opacity 0.2s ease,
@@ -147,49 +171,53 @@
   }
 
   /* ============================================================
-     胶囊导航
+     胶囊导航（霓虹 HUD）
      ============================================================ */
   .pill-nav {
     display: flex;
     align-items: center;
     height: 42px;
     padding: 4px 5px;
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(0, 229, 255, 0.45);
+    background: rgba(0, 229, 255, 0.06);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-radius: 999px;
+    box-shadow: 0 0 22px rgba(0, 229, 255, 0.12), inset 0 0 18px rgba(0, 229, 255, 0.05);
   }
   .pill-nav a {
-    color: #fff;
+    color: var(--color-chalk);
     text-decoration: none;
     padding: 8px 19px;
     border-radius: 999px;
     line-height: 1;
     font-size: 14px;
     white-space: nowrap;
-    transition: background 0.25s ease, color 0.25s ease;
+    transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
   }
   .pill-nav a:hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: rgba(0, 229, 255, 0.16);
+    color: #fff;
   }
   .pill-nav a.active {
-    background: #fff;
+    background: var(--color-cyan);
     color: #000;
+    font-weight: 600;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.55);
   }
   .pill-lang {
     display: flex;
     align-items: center;
     height: 42px;
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(0, 229, 255, 0.45);
+    background: rgba(0, 229, 255, 0.06);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-radius: 999px;
     overflow: hidden;
   }
   .pill-lang a {
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(214, 232, 255, 0.6);
     text-decoration: none;
     padding: 8px 14px;
     line-height: 1;
@@ -197,19 +225,21 @@
     transition: background 0.25s ease, color 0.25s ease;
   }
   .pill-lang a.active {
-    background: #fff;
+    background: var(--color-cyan);
     color: #000;
+    font-weight: 600;
+    box-shadow: 0 0 16px rgba(0, 229, 255, 0.5);
   }
 
   /* ============================================================
-     fact row：138px + 1fr 两列信息行
+     fact row：HUD 信息行
      ============================================================ */
   .fact-row {
     display: grid;
     grid-template-columns: 138px 1fr;
     gap: 18px;
     padding: 9px 0;
-    border-bottom: 1px solid var(--color-line);
+    border-bottom: 1px solid var(--color-line-soft);
   }
   .fact-row:last-child {
     border-bottom: 0;
@@ -217,6 +247,17 @@
   .fact-row dt {
     font-weight: 700;
     font-size: 15px;
+    color: var(--color-chalk);
+  }
+  .fact-row dt::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 10px;
+    vertical-align: 2px;
+    background: var(--color-cyan);
+    box-shadow: 0 0 8px rgba(0, 229, 255, 0.9);
   }
   .fact-row dd {
     margin: 0;
@@ -234,7 +275,7 @@
   }
 
   /* ============================================================
-     巨型标题
+     巨型标题（渐变 + 辉光）
      ============================================================ */
   .giant-latin {
     font-family: var(--font-display);
@@ -242,6 +283,11 @@
     line-height: 0.72;
     letter-spacing: 0.01em;
     font-size: clamp(96px, 17vw, 270px);
+    background: linear-gradient(180deg, #ffffff 25%, #a5e8ff 62%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 42px rgba(0, 229, 255, 0.28);
   }
   .giant-zh {
     font-family: var(--font-sans);
@@ -249,6 +295,10 @@
     line-height: 1.06;
     letter-spacing: 0.01em;
     font-size: clamp(40px, 6.2vw, 88px);
+    color: #fff;
+    text-shadow:
+      0 0 28px rgba(0, 229, 255, 0.3),
+      0 0 80px rgba(139, 92, 246, 0.2);
   }
 
   /* ============================================================
@@ -275,7 +325,9 @@
     position: fixed;
     inset: 0;
     z-index: 1;
-    background: linear-gradient(to bottom, transparent 52%, rgba(0, 0, 0, 0.88) 100%);
+    background:
+      linear-gradient(to bottom, transparent 52%, rgba(2, 4, 12, 0.9) 100%),
+      radial-gradient(90% 60% at 50% 0%, rgba(56, 130, 246, 0.08) 0%, transparent 60%);
     pointer-events: none;
   }
   .starfield-canvas {
@@ -301,10 +353,11 @@
     min-height: 22px;
     color: var(--color-dim);
     text-decoration: none;
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, text-shadow 0.2s ease;
   }
   .planet-item:hover {
     color: #fff;
+    text-shadow: 0 0 14px rgba(0, 229, 255, 0.75);
   }
   .planet-item.active {
     font-size: 18px;
@@ -317,7 +370,8 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #fff;
+    background: var(--color-cyan);
+    box-shadow: 0 0 14px rgba(0, 229, 255, 0.9);
   }
   body.intro-ready .planet-list {
     animation: list-in 0.9s var(--ease-space) 0.65s both;
@@ -352,6 +406,12 @@
     font-size: 15px;
     color: var(--color-dim);
   }
+  .portal-heading span:first-child {
+    color: var(--color-cyan);
+    letter-spacing: 0.12em;
+    text-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
+    white-space: nowrap;
+  }
   .portal-heading strong {
     color: #fff;
     font-size: 16px;
@@ -360,20 +420,6 @@
   }
   body.intro-ready .portal-heading {
     animation: rise 0.85s var(--ease-space) 0.9s both;
-  }
-  @media (max-width: 640px) {
-    .planet-list {
-      display: none;
-    }
-    .portal-heading {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 4px;
-      font-size: 14px;
-    }
-    .portal-heading strong {
-      font-size: 16px;
-    }
   }
   .portal-btn {
     position: relative;
@@ -404,6 +450,11 @@
     margin: 0 0 -0.04em;
     transform: translateX(-32px);
     opacity: 0;
+    background: linear-gradient(180deg, #ffffff 25%, #a5e8ff 62%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 46px rgba(0, 229, 255, 0.3);
   }
   .planet-content .landing-facts {
     width: min(447px, 34vw);
@@ -419,6 +470,18 @@
       width: 100%;
       margin-top: 18px;
     }
+    .planet-list {
+      display: none;
+    }
+    .portal-heading {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      font-size: 14px;
+    }
+    .portal-heading strong {
+      font-size: 16px;
+    }
   }
   .content-revealing .planet-content h1 {
     animation: title-rise 1.05s var(--ease-space-soft) both;
@@ -433,7 +496,7 @@
     position: fixed;
     inset: 0;
     z-index: 20;
-    background: #000;
+    background: #010208;
     transition: opacity 0.8s ease;
   }
   .preloader.is-background {
@@ -483,10 +546,13 @@
     font-weight: 100;
     font-family: var(--font-sans);
     font-variant-numeric: tabular-nums;
+    color: #bdeeff;
+    text-shadow: 0 0 26px rgba(0, 229, 255, 0.75);
   }
   .preloader-count .percent {
     font-size: 24px;
     padding-bottom: 4px;
+    color: rgba(0, 229, 255, 0.75);
   }
   .preloader-count.is-leaving {
     animation: count-out 0.75s var(--ease-space) both;
@@ -498,7 +564,7 @@
   .article-body {
     font-size: 16px;
     line-height: 2;
-    color: rgba(255, 255, 255, 0.88);
+    color: rgba(234, 242, 255, 0.88);
   }
   .article-body p {
     margin: 1.4em 0;
@@ -514,20 +580,33 @@
   .article-body h2 {
     font-size: 24px;
     padding-bottom: 0.4em;
+    padding-left: 14px;
     border-bottom: 1px solid var(--color-line-soft);
+    position: relative;
+  }
+  .article-body h2::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.18em;
+    width: 4px;
+    height: 1em;
+    background: linear-gradient(180deg, var(--color-cyan), var(--color-violet));
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
   }
   .article-body h3 {
     font-size: 19px;
   }
   .article-body a {
-    color: #fff;
+    color: #7dd3fc;
     text-decoration: underline;
     text-underline-offset: 4px;
-    text-decoration-color: rgba(255, 255, 255, 0.4);
-    transition: text-decoration-color 0.2s ease;
+    text-decoration-color: rgba(0, 229, 255, 0.4);
+    transition: text-decoration-color 0.2s ease, color 0.2s ease;
   }
   .article-body a:hover {
-    text-decoration-color: #fff;
+    color: var(--color-cyan);
+    text-decoration-color: var(--color-cyan);
   }
   .article-body ul,
   .article-body ol {
@@ -543,28 +622,32 @@
   .article-body li {
     margin: 0.4em 0;
   }
-  .article-body ul li::marker {
-    color: var(--color-faint);
+  .article-body ul li::marker,
+  .article-body ol li::marker {
+    color: rgba(0, 229, 255, 0.6);
   }
   .article-body blockquote {
-    border-left: 2px solid var(--color-line);
+    border-left: 2px solid var(--color-cyan);
     padding: 0.2em 0 0.2em 1.2em;
     margin: 1.6em 0;
     color: var(--color-dim);
+    text-shadow: 0 0 18px rgba(0, 229, 255, 0.12);
   }
   .article-body :not(pre) > code {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--color-line-soft);
+    background: rgba(0, 229, 255, 0.08);
+    border: 1px solid rgba(0, 229, 255, 0.22);
     padding: 0.15em 0.45em;
     border-radius: 6px;
     font-size: 0.86em;
     font-family: var(--font-mono);
+    color: #a5f3fc;
   }
   .article-body pre {
     margin: 1.8em 0;
     padding: 18px 20px;
     border-radius: 12px;
-    border: 1px solid var(--color-line-soft);
+    border: 1px solid rgba(0, 229, 255, 0.18);
+    box-shadow: 0 0 28px rgba(0, 60, 120, 0.25), inset 0 0 40px rgba(10, 20, 60, 0.35);
     overflow-x: auto;
     font-size: 13.5px;
     line-height: 1.75;
@@ -594,6 +677,7 @@
   }
   .article-body th {
     font-weight: 700;
+    color: var(--color-cyan);
   }
   .article-body hr {
     border: 0;
@@ -611,7 +695,7 @@
     text-decoration: none;
     font-size: 13px;
     line-height: 1.9;
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, border-color 0.2s ease;
     border-left: 1px solid var(--color-line-soft);
     padding-left: 14px;
   }
@@ -619,8 +703,9 @@
     color: var(--color-dim);
   }
   .toc a.active {
-    color: #fff;
-    border-left-color: #fff;
+    color: var(--color-cyan);
+    border-left-color: var(--color-cyan);
+    text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
   }
   .toc a.toc-h3 {
     padding-left: 28px;

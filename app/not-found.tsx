@@ -7,7 +7,7 @@ export default function NotFound() {
       <p className="text-dim">页面飞出了太阳系 / This page drifted out of the solar system.</p>
       <Link
         href="/zh"
-        className="rounded-full border border-line px-6 py-3 text-sm text-dim transition-colors hover:border-white hover:text-white"
+        className="rounded-full border border-line px-6 py-3 text-sm text-dim transition-colors hover:border-cyan hover:text-cyan"
       >
         返回首页 / Back home
       </Link>

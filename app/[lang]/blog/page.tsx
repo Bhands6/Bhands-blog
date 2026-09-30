@@ -65,10 +65,10 @@ export default async function BlogPage({
         <div className="mt-12 flex flex-wrap items-center gap-2">
           <Link
             href={href()}
-            className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+            className={`rounded-full border px-4 py-2 text-sm transition-all ${
               !category && !tag
-                ? "border-white bg-white text-black"
-                : "border-line text-dim hover:border-white hover:text-white"
+                ? "border-cyan bg-cyan font-medium text-black shadow-[0_0_20px_rgba(0,229,255,0.5)]"
+                : "border-line text-dim hover:border-cyan hover:text-cyan"
             }`}
           >
             {t.blog.all}
@@ -77,10 +77,10 @@ export default async function BlogPage({
             <Link
               key={c.key}
               href={href(c.key)}
-              className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+              className={`rounded-full border px-4 py-2 text-sm transition-all ${
                 category === c.key
-                  ? "border-white bg-white text-black"
-                  : "border-line text-dim hover:border-white hover:text-white"
+                  ? "border-cyan bg-cyan font-medium text-black shadow-[0_0_20px_rgba(0,229,255,0.5)]"
+                  : "border-line text-dim hover:border-cyan hover:text-cyan"
               }`}
             >
               {t.category[c.key]}
@@ -95,8 +95,8 @@ export default async function BlogPage({
               <Link
                 key={tagItem.tag}
                 href={href(undefined, tagItem.tag)}
-                className={`transition-colors hover:text-white ${
-                  tag === tagItem.tag ? "text-white underline underline-offset-4" : "text-dim"
+                className={`transition-colors hover:text-cyan ${
+                  tag === tagItem.tag ? "text-cyan underline underline-offset-4" : "text-dim"
                 }`}
               >
                 #{tagItem.tag}

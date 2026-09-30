@@ -40,7 +40,7 @@ export default function SearchClient({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={t.search.placeholder}
-        className="w-full border-b border-line bg-transparent pb-4 text-2xl font-bold text-white outline-none placeholder:text-faint focus:border-white"
+        className="w-full border-b border-line bg-transparent pb-4 text-2xl font-bold text-white outline-none transition-shadow placeholder:text-faint focus:border-cyan focus:shadow-[0_10px_30px_rgba(0,229,255,0.12)]"
       />
       <div className="mt-4 text-xs text-faint">
         {query.trim() ? t.search.results(results.length) : t.search.empty}
