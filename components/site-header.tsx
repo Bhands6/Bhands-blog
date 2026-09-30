@@ -2,18 +2,35 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogoMark } from "./logo-mark";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { getDict } from "@/lib/i18n";
 import type { Lang } from "@/lib/posts";
+import {
+  getAuth,
+  getServerAuth,
+  logout as authLogout,
+  subscribeAuth,
+} from "@/lib/auth-client";
 
 function withLang(pathname: string, lang: Lang): string {
   const rest = pathname.replace(/^\/(zh|en)/, "");
   return `/${lang}${rest === "/" || rest === "" ? "" : rest}`;
 }
 
+/** NEXUS 风格顶部导航：博客站点链接（NEXUS STATION 主题移植） */
 export default function SiteHeader({ lang }: { lang: Lang }) {
   const pathname = usePathname() ?? `/${lang}`;
   const t = getDict(lang);
+  const [scrolled, setScrolled] = useState(false);
+  const user = useSyncExternalStore(subscribeAuth, getAuth, getServerAuth);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 80);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const seg = (p: string) => `/${lang}${p}`;
   const isActive = (p: string) =>
     p === "/blog"
@@ -28,30 +45,56 @@ export default function SiteHeader({ lang }: { lang: Lang }) {
   ];
 
   return (
-    <header
-      className="chrome fixed z-10 flex items-center justify-between"
-      style={{
-        left: "clamp(18px, 1.95vw, 28px)",
-        right: "clamp(18px, 1.95vw, 28px)",
-        top: "clamp(18px, 3.1vh, 28px)",
-      }}
-    >
-      <Link href={`/${lang}`} aria-label={lang === "zh" ? "回到首页" : "Home"}>
-        <LogoMark />
+    <nav className={`nx-nav ${scrolled ? "scrolled" : ""}`} role="navigation" aria-label="Main navigation">
+      <Link href={`/${lang}`} className="nx-nav-logo" aria-label={lang === "zh" ? "回到首页" : "Home"}>
+        <span className="logo-dot" aria-hidden="true" />
+        {t.nexus.brand}
       </Link>
-      <div className="flex items-center gap-3 max-[640px]:hidden">
-        <nav className="pill-nav" aria-label="Primary">
-          {items.map((item) => (
-            <Link
-              key={item.href}
-              href={seg(item.href)}
-              className={isActive(item.href) ? "active" : ""}
-            >
+      <ul className="nx-nav-links nx-nav-pages">
+        {items.map((item) => (
+          <li key={item.href}>
+            <Link href={seg(item.href)} className={isActive(item.href) ? "active" : ""}>
               {item.label}
             </Link>
-          ))}
-        </nav>
-        <div className="pill-lang" aria-label="Language">
+          </li>
+        ))}
+        {user?.user.role === "ADMIN" && (
+          <li>
+            <Link
+              href={`/${lang}/admin`}
+              className={pathname.startsWith(`/${lang}/admin`) ? "active" : ""}
+            >
+              {t.nexus.admin}
+            </Link>
+          </li>
+        )}
+        {user ? (
+          <>
+            <li>
+              <span className="nx-user-chip" title={user.user.displayName}>
+                <span className="user-dot" aria-hidden="true" />
+                {user.user.displayName}
+              </span>
+            </li>
+            <li>
+              <button type="button" className="nx-logout" onClick={() => void authLogout()}>
+                {t.nexus.logout}
+              </button>
+            </li>
+          </>
+        ) : (
+          <li>
+            <Link
+              href={`/${lang}/login`}
+              className={pathname.startsWith(`/${lang}/login`) ? "active" : ""}
+            >
+              {t.nexus.login}
+            </Link>
+          </li>
+        )}
+      </ul>
+      <div className="nx-nav-right">
+        <div className="nx-lang" aria-label="Language">
           <Link href={withLang(pathname, "zh")} className={lang === "zh" ? "active" : ""}>
             中
           </Link>
@@ -59,16 +102,11 @@ export default function SiteHeader({ lang }: { lang: Lang }) {
             EN
           </Link>
         </div>
+        <div className="nx-nav-status">
+          <span className="live-dot" aria-hidden="true" />
+          {t.nexus.relay}
+        </div>
       </div>
-      {/* 移动端精简：只保留语言切换 */}
-      <div className="pill-lang max-[640px]:flex hidden" aria-label="Language">
-        <Link href={withLang(pathname, "zh")} className={lang === "zh" ? "active" : ""}>
-          中
-        </Link>
-        <Link href={withLang(pathname, "en")} className={lang === "en" ? "active" : ""}>
-          EN
-        </Link>
-      </div>
-    </header>
+    </nav>
   );
 }

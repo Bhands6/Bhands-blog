@@ -1,0 +1,44 @@
+# Bhands-Blog 独立基础设施（可选）
+#
+# 背景：开发期复用了 my-website compose 项目里的 nexus-mysql / nexus-redis。
+# 2026-09-30 那次重新部署导致 bhands_blog 库被清，为避免再次被波及，
+# 可切换到本文件提供的独立实例（端口错开：MySQL 3307 / Redis 6380）。
+#
+# 启用方式：
+#   docker compose up -d
+#   然后把 .env 里 DATABASE_URL / REDIS_URL 的端口改为 3307 / 6380
+#   npx prisma db push
+#
+# 不启用也不影响现有开发（继续用 nexus-mysql:3306 / nexus-redis:6379）。
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: bhands-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: bhands_blog
+      MYSQL_USER: nexus
+      MYSQL_PASSWORD: nexus123
+    ports:
+      - "3307:3306"
+    volumes:
+      - bhands-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot123"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: bhands-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6380:6379"
+    volumes:
+      - bhands-redis-data:/data
+
+volumes:
+  bhands-mysql-data:
+  bhands-redis-data:

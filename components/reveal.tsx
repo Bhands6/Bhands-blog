@@ -2,15 +2,17 @@
 
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 
-/** 进入视口时做 blur + 上升揭示 */
+/** 进入视口时揭示；variant 控制方向（默认向上） */
 export default function Reveal({
   children,
   delay = 0,
   className = "",
+  variant = "up",
 }: {
   children: ReactNode;
   delay?: number;
   className?: string;
+  variant?: "up" | "left" | "right";
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -30,10 +32,12 @@ export default function Reveal({
     return () => io.disconnect();
   }, []);
 
+  const variantCls = variant === "left" ? "rv-left" : variant === "right" ? "rv-right" : "";
+
   return (
     <div
       ref={ref}
-      className={`rv ${className}`}
+      className={`rv ${variantCls} ${className}`}
       style={{ "--rv-delay": `${delay}s` } as CSSProperties}
     >
       {children}

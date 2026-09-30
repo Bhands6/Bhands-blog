@@ -1,0 +1,74 @@
+// NEXUS 博客全栈化数据模型
+// 设计依据：用户/评论/点赞/统计，文章本体保留 MDX 文件，用 lang + slug 关联
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  READER
+}
+
+model User {
+  id           BigInt   @id @default(autoincrement())
+  username     String   @unique @db.VarChar(50)
+  email        String   @unique @db.VarChar(120)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  displayName  String   @map("display_name") @db.VarChar(50)
+  avatarUrl    String?  @map("avatar_url") @db.VarChar(500)
+  role         Role     @default(READER)
+  status       Int      @default(1) // 1 正常 0 封禁
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  comments Comment[]
+
+  @@map("users")
+}
+
+model Comment {
+  id        BigInt   @id @default(autoincrement())
+  postLang  String   @map("post_lang") @db.Char(2)
+  postSlug  String   @map("post_slug") @db.VarChar(200)
+  userId    BigInt   @map("user_id")
+  parentId  BigInt?  @map("parent_id")
+  content   String   @db.VarChar(1000)
+  status    Int      @default(1) // 1 可见 0 已删除
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User      @relation(fields: [userId], references: [id])
+  parent  Comment?  @relation("CommentThread", fields: [parentId], references: [id])
+  replies Comment[] @relation("CommentThread")
+
+  @@index([postLang, postSlug, createdAt])
+  @@index([parentId])
+  @@map("comments")
+}
+
+model PostLike {
+  id        BigInt   @id @default(autoincrement())
+  postLang  String   @map("post_lang") @db.Char(2)
+  postSlug  String   @map("post_slug") @db.VarChar(200)
+  userId    BigInt   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([postLang, postSlug, userId])
+  @@map("post_likes")
+}
+
+model PostStat {
+  postLang  String   @map("post_lang") @db.Char(2)
+  postSlug  String   @map("post_slug") @db.VarChar(200)
+  views     BigInt   @default(0)
+  likes     BigInt   @default(0)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@id([postLang, postSlug])
+  @@map("post_stats")
+}

@@ -1,0 +1,1853 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS STATION — 星际枢纽 | Commander 星渊·Nova</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════
+   NEXUS STATION — Enhanced Build
+   Commander 星渊·Nova — Station Ops
+   ══════════════════════════════════════════════ */
+
+/* ── Reset & Root Variables ─────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-deep:    #030108;
+  --bg-surface: #0a0a24;
+  --bg-panel:   rgba(10, 14, 46, 0.75);
+  --cyan:       #00f0ff;
+  --cyan-dim:   rgba(0, 240, 255, 0.27);
+  --magenta:    #ff00aa;
+  --magenta-dim:rgba(255, 0, 170, 0.20);
+  --gold:       #f0c040;
+  --green:      #44ff88;
+  --red:        #ff4444;
+  --text:       #d0d8f0;
+  --text-muted: #5a6080;
+  --border-glow:rgba(0, 240, 255, 0.12);
+  --font-display:'Orbitron', sans-serif;
+  --font-body:   'Rajdhani', sans-serif;
+  --font-mono:   'Share Tech Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-deep);
+  color: var(--text);
+  overflow-x: hidden;
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+/* ── Scanline Overlay ───────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent, transparent 2px,
+    rgba(0,240,255,0.008) 2px, rgba(0,240,255,0.008) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── Canvas Layers ──────────────────────── */
+#starfield, #particle-trail {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+#particle-trail { z-index: 1; }
+
+/* ── Ambient Glow Orbs ─────────────────── */
+.glow-orb {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(80px);
+  opacity: 0.6;
+}
+.glow-orb.cyan {
+  width: 400px; height: 400px;
+  background: var(--cyan-dim);
+  top: 20%; right: -100px;
+  animation: float 15s ease-in-out infinite;
+}
+.glow-orb.magenta {
+  width: 300px; height: 300px;
+  background: var(--magenta-dim);
+  bottom: 10%; left: -80px;
+  animation: float 18s ease-in-out infinite reverse;
+}
+.glow-orb.gold {
+  width: 200px; height: 200px;
+  background: rgba(240,192,64,0.08);
+  top: 60%; left: 30%;
+  animation: float 22s ease-in-out infinite;
+}
+@keyframes float {
+  0%,100% { transform: translate(0,0); }
+  33%     { transform: translate(30px,-20px); }
+  66%     { transform: translate(-20px,20px); }
+}
+
+/* ── Navigation ────────────────────────── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 3rem;
+  background: linear-gradient(180deg, rgba(3,1,8,0.95) 0%, transparent 100%);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--border-glow);
+  transition: background 0.4s;
+}
+nav.scrolled {
+  background: rgba(3,1,8,0.92);
+  border-bottom-color: var(--cyan-dim);
+}
+
+.nav-logo {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--cyan);
+  text-shadow: 0 0 20px var(--cyan-dim);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  user-select: none;
+}
+.logo-dot {
+  width: 8px; height: 8px;
+  background: var(--cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--cyan), 0 0 30px var(--cyan-dim);
+  animation: pulse 2s ease-in-out infinite;
+}
+.nav-links {
+  display: flex;
+  gap: 2.5rem;
+  list-style: none;
+}
+.nav-links a {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.3s, text-shadow 0.3s;
+  position: relative;
+}
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -4px; left: 0;
+  width: 0; height: 1px;
+  background: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan);
+  transition: width 0.3s ease;
+}
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--cyan);
+  text-shadow: 0 0 10px var(--cyan-dim);
+}
+.nav-links a:hover::after,
+.nav-links a.active::after { width: 100%; }
+
+.nav-status {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.nav-status .live-dot {
+  width: 5px; height: 5px;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.35; }
+}
+
+/* ── Hero Section ───────────────────────── */
+.hero {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+}
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, var(--border-glow) 1px, transparent 1px),
+    linear-gradient(0deg, var(--border-glow) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(ellipse 60% 50% at 50% 50%, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 50%, black 20%, transparent 70%);
+  animation: gridDrift 20s linear infinite;
+  opacity: 0.25;
+}
+@keyframes gridDrift {
+  from { background-position: 0 0; }
+  to   { background-position: 80px 80px; }
+}
+
+.hero-status {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.4em;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 2rem;
+  opacity: 0;
+  animation: fadeUp 0.8s ease 0.3s forwards;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.status-line {
+  width: 40px; height: 1px;
+  background: linear-gradient(90deg, var(--cyan), transparent);
+}
+.status-line.right {
+  background: linear-gradient(90deg, transparent, var(--cyan));
+}
+
+.hero h1 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(3rem, 8vw, 7rem);
+  letter-spacing: 0.15em;
+  line-height: 1.1;
+  color: #fff;
+  text-shadow: 0 0 60px var(--cyan-dim), 0 0 120px rgba(0,240,255,0.1);
+  opacity: 0;
+  animation: fadeUp 1s ease 0.6s forwards;
+  position: relative;
+}
+.glitch {
+  position: relative;
+  display: inline-block;
+}
+.glitch::before, .glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+.glitch::before {
+  color: var(--cyan);
+  animation: glitch1 4s infinite;
+}
+.glitch::after {
+  color: var(--magenta);
+  animation: glitch2 4s infinite;
+}
+@keyframes glitch1 {
+  0%,90%,100% { opacity:0; transform:none; }
+  92% { opacity:0.8; transform:translate(-3px,-1px); clip-path:inset(20% 0 60% 0); }
+  94% { opacity:0; }
+  96% { opacity:0.6; transform:translate(2px,1px); clip-path:inset(50% 0 20% 0); }
+  98% { opacity:0; }
+}
+@keyframes glitch2 {
+  0%,88%,100% { opacity:0; transform:none; }
+  90% { opacity:0.6; transform:translate(3px,1px); clip-path:inset(40% 0 30% 0); }
+  93% { opacity:0; }
+  95% { opacity:0.8; transform:translate(-2px,-1px); clip-path:inset(10% 0 70% 0); }
+  97% { opacity:0; }
+}
+
+/* Commander Log Entry in Hero */
+.hero-log {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.25em;
+  color: var(--gold);
+  margin-top: 1.8rem;
+  opacity: 0;
+  animation: fadeUp 1s ease 0.9s forwards;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.hero-log .log-bar {
+  width: 28px; height: 1px;
+  background: var(--gold);
+  opacity: 0.5;
+}
+
+.hero-sub {
+  font-family: var(--font-body);
+  font-size: 1.25rem;
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  margin-top: 1.2rem;
+  opacity: 0;
+  animation: fadeUp 1s ease 1.1s forwards;
+}
+
+.hero-coords {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  letter-spacing: 0.3em;
+  margin-top: 3rem;
+  opacity: 0;
+  animation: fadeUp 1s ease 1.3s forwards;
+}
+
+.hero-cta {
+  margin-top: 3rem;
+  display: flex;
+  gap: 1.5rem;
+  opacity: 0;
+  animation: fadeUp 1s ease 1.5s forwards;
+}
+
+.btn-primary {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  padding: 1rem 2.5rem;
+  border: 1px solid var(--cyan);
+  background: transparent;
+  color: var(--cyan);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.4s, color 0.4s, box-shadow 0.4s;
+}
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--cyan);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+  z-index: -1;
+}
+.btn-primary:hover {
+  color: var(--bg-deep);
+  box-shadow: 0 0 30px var(--cyan-dim);
+}
+.btn-primary:hover::before { transform: scaleX(1); }
+
+.btn-ghost {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  padding: 1rem 2.5rem;
+  border: 1px solid var(--text-muted);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.3s, color 0.3s;
+}
+.btn-ghost:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(30px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* ── Section Base Styles ────────────────── */
+section {
+  position: relative;
+  z-index: 1;
+  padding: 8rem 3rem;
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.5em;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.section-label::before {
+  content: '';
+  width: 24px; height: 1px;
+  background: var(--cyan);
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #fff;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+
+.section-desc {
+  font-size: 1.05rem;
+  font-weight: 300;
+  color: var(--text-muted);
+  max-width: 550px;
+  line-height: 1.85;
+}
+
+/* ── Scroll Reveal ──────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-40px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.reveal-left.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+.reveal-right {
+  opacity: 0;
+  transform: translateX(40px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.reveal-right.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ── Data Streams Section ───────────────── */
+.data-streams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.data-visual {
+  position: relative;
+  height: 450px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orbit-ring {
+  position: absolute;
+  border: 1px solid var(--border-glow);
+  border-radius: 50%;
+  animation: spin linear infinite;
+}
+.orbit-ring:nth-child(1) { width:320px; height:320px; animation-duration:30s; }
+.orbit-ring:nth-child(2) { width:220px; height:220px; animation-duration:20s; animation-direction:reverse; }
+.orbit-ring:nth-child(3) { width:120px; height:120px; animation-duration:15s; }
+.orbit-ring::after {
+  content: '';
+  position: absolute;
+  top: -3px; left: 50%;
+  width: 6px; height: 6px;
+  background: var(--cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--cyan);
+}
+
+.orbit-core {
+  width: 40px; height: 40px;
+  background: radial-gradient(circle, var(--cyan), transparent 70%);
+  border-radius: 50%;
+  box-shadow: 0 0 40px var(--cyan-dim), 0 0 80px var(--cyan-dim);
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Dashboard Gauges ───────────────────── */
+.dashboard {
+  max-width: 1300px;
+  margin: 6rem auto 0;
+}
+.dashboard-header {
+  margin-bottom: 2.5rem;
+}
+.gauges-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+}
+.gauge-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glow);
+  padding: 2rem 1.5rem 1.8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.4s, transform 0.3s;
+}
+.gauge-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.gauge-card:hover { border-color: var(--cyan); transform: translateY(-2px); }
+.gauge-card:hover::before { opacity: 1; }
+
+.gauge-canvas {
+  width: 130px;
+  height: 130px;
+  margin-bottom: 1rem;
+}
+.gauge-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.3em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  text-align: center;
+}
+.gauge-trend {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.gauge-trend.up   { color: var(--green); }
+.gauge-trend.down { color: var(--red); }
+.gauge-trend.stable { color: var(--gold); }
+
+/* ── Fleet Cards ────────────────────────── */
+.fleet-section {
+  max-width: 1300px;
+  margin: 0 auto;
+}
+.fleet-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  margin-top: 3rem;
+}
+.fleet-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glow);
+  padding: 3rem 2.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.4s, transform 0.3s;
+  cursor: pointer;
+  opacity: 0;
+  animation: fadeUp 0.6s ease forwards;
+}
+.fleet-card:nth-child(1) { animation-delay: 0.1s; }
+.fleet-card:nth-child(2) { animation-delay: 0.2s; }
+.fleet-card:nth-child(3) { animation-delay: 0.3s; }
+.fleet-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--cyan-dim) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.fleet-card:hover {
+  border-color: var(--cyan);
+  transform: translateY(-4px);
+}
+.fleet-card:hover::before { opacity: 1; }
+
+.fleet-card-id {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.4em;
+  color: var(--magenta);
+  margin-bottom: 1.5rem;
+  position: relative; z-index: 1;
+}
+.fleet-card-title {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #fff;
+  margin-bottom: 1rem;
+  position: relative; z-index: 1;
+}
+.fleet-card-text {
+  font-weight: 300;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.8;
+  position: relative; z-index: 1;
+}
+.fleet-card-specs {
+  margin-top: 2rem;
+  display: flex;
+  gap: 2rem;
+  position: relative; z-index: 1;
+}
+.spec-item {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.spec-item span {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--cyan);
+  margin-top: 0.3rem;
+}
+
+/* ── Star Map ───────────────────────────── */
+.starmap-section {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.starmap-container {
+  margin-top: 2.5rem;
+  position: relative;
+  background: rgba(5,5,20,0.6);
+  border: 1px solid var(--border-glow);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.starmap-canvas {
+  width: 100%;
+  height: 450px;
+  display: block;
+  cursor: crosshair;
+}
+.starmap-hud {
+  position: absolute;
+  bottom: 1rem; left: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+  background: rgba(3,1,8,0.8);
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--border-glow);
+}
+.starmap-hud .highlight { color: var(--cyan); }
+
+.starmap-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(3,1,8,0.92);
+  border: 1px solid var(--cyan);
+  padding: 0.6rem 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  color: var(--text);
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+  min-width: 160px;
+}
+.starmap-tooltip.visible { opacity: 1; }
+.starmap-tooltip .tt-name {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--cyan);
+  margin-bottom: 0.3rem;
+}
+.starmap-tooltip .tt-status { color: var(--green); }
+.starmap-tooltip .tt-status.warn { color: var(--gold); }
+.starmap-tooltip .tt-status.alert { color: var(--magenta); }
+
+/* ── Communication Feed ─────────────────── */
+.comms-section {
+  max-width: 900px;
+  margin: 0 auto;
+}
+.comms-feed {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.comm-msg {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glow);
+  padding: 1.2rem 1.8rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.2rem;
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.comm-msg.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+.comm-msg:hover { border-color: var(--cyan-dim); }
+
+.comm-class {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.2em;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid;
+  white-space: nowrap;
+  margin-top: 0.15rem;
+}
+.comm-class.routine { color: var(--text-muted); border-color: var(--text-muted); }
+.comm-class.priority { color: var(--gold); border-color: var(--gold); }
+.comm-class.critical { color: var(--magenta); border-color: var(--magenta); }
+
+.comm-body { flex: 1; }
+.comm-header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.4rem;
+}
+.comm-sender {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #fff;
+}
+.comm-time {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+}
+.comm-text {
+  font-weight: 300;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+.comm-text .highlight { color: var(--cyan); font-weight: 400; }
+.comm-text .alert-text { color: var(--magenta); font-weight: 400; }
+
+/* ── Timeline ───────────────────────────── */
+.timeline-section {
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+}
+.timeline-section::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  width: 1px; height: 100%;
+  background: linear-gradient(180deg, transparent, var(--cyan), var(--magenta), transparent);
+  opacity: 0.3;
+}
+.timeline-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 4rem;
+  position: relative;
+}
+.timeline-item:nth-child(odd) {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+.timeline-item:nth-child(odd) .timeline-content {
+  padding-right: 4rem; padding-left: 0;
+}
+.timeline-item:nth-child(even) .timeline-content {
+  padding-left: 4rem;
+}
+.timeline-content { flex: 1; }
+.timeline-year {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.4em;
+  color: var(--gold);
+  margin-bottom: 0.5rem;
+}
+.timeline-title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+.timeline-desc {
+  font-weight: 300;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.8;
+}
+.timeline-dot {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px; height: 10px;
+  background: var(--bg-deep);
+  border: 2px solid var(--cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--cyan-dim);
+  z-index: 2;
+}
+
+/* ── Terminal ───────────────────────────── */
+.terminal-section {
+  max-width: 800px;
+  margin: 0 auto;
+}
+.terminal {
+  background: rgba(5,5,20,0.9);
+  border: 1px solid var(--border-glow);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 2rem;
+}
+.terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.2rem;
+  background: rgba(0,240,255,0.03);
+  border-bottom: 1px solid var(--border-glow);
+}
+.terminal-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+.terminal-dot.r { background: var(--red); }
+.terminal-dot.y { background: var(--gold); }
+.terminal-dot.g { background: var(--green); }
+.terminal-title-bar {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+.terminal-body {
+  padding: 2rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 2;
+  color: var(--text-muted);
+  min-height: 250px;
+}
+.terminal-line {
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  transform: translateX(-8px);
+}
+.terminal-line.typed {
+  opacity: 1;
+  transform: translateX(0);
+}
+.terminal-line .prompt { color: var(--cyan); }
+.terminal-line .success { color: var(--green); }
+.terminal-line .warn { color: var(--gold); }
+.terminal-line .error { color: var(--magenta); }
+
+/* ── Crew Profile ───────────────────────── */
+.crew-section {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.crew-card {
+  margin-top: 3rem;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glow);
+  overflow: hidden;
+  position: relative;
+}
+.crew-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--cyan), var(--magenta), var(--cyan));
+}
+
+.crew-avatar-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  background: rgba(0,240,255,0.02);
+  border-right: 1px solid var(--border-glow);
+  position: relative;
+}
+.crew-avatar {
+  width: 100px; height: 100px;
+  border: 2px solid var(--cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 30px var(--cyan-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.crew-avatar .avatar-ring {
+  position: absolute;
+  inset: -6px;
+  border: 1px solid var(--border-glow);
+  border-radius: 50%;
+  animation: spin 20s linear infinite;
+}
+.crew-avatar .avatar-ring::after {
+  content: '';
+  position: absolute;
+  top: -2px; left: 50%;
+  width: 4px; height: 4px;
+  background: var(--cyan);
+  border-radius: 50%;
+}
+.crew-avatar-initials {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--cyan);
+  text-shadow: 0 0 20px var(--cyan-dim);
+  letter-spacing: 0.1em;
+}
+.crew-avatar-label {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.3em;
+  color: var(--text-muted);
+  margin-top: 1.2rem;
+  text-transform: uppercase;
+}
+.crew-avatar-id {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.2em;
+  color: var(--magenta);
+  margin-top: 0.4rem;
+}
+
+.crew-info {
+  padding: 2.5rem 3rem;
+}
+.crew-name {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #fff;
+  margin-bottom: 0.3rem;
+}
+.crew-title {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.25em;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+.crew-bio {
+  font-weight: 300;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 1.85;
+  margin-bottom: 2rem;
+}
+.crew-stats-row {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+.crew-stat {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.crew-stat .value {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--cyan);
+  margin-top: 0.3rem;
+  letter-spacing: 0.05em;
+}
+.crew-quote {
+  margin-top: 2rem;
+  padding: 1.2rem 1.5rem;
+  border-left: 2px solid var(--cyan);
+  background: rgba(0,240,255,0.03);
+  font-style: italic;
+  font-weight: 300;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+.crew-quote .attribution {
+  display: block;
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  margin-top: 0.6rem;
+}
+
+/* ── Footer ─────────────────────────────── */
+footer {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--border-glow);
+  padding: 4rem 3rem 2rem;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 3rem;
+  margin-bottom: 3rem;
+}
+.footer-brand {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--cyan);
+  margin-bottom: 1rem;
+}
+.footer-desc {
+  font-weight: 300;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.8;
+  max-width: 300px;
+}
+.footer-col-title {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.4em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 1.2rem;
+}
+.footer-col a {
+  display: block;
+  font-weight: 300;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 0.3rem 0;
+  transition: color 0.3s;
+}
+.footer-col a:hover { color: var(--cyan); }
+.footer-bottom {
+  border-top: 1px solid var(--border-glow);
+  padding-top: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.footer-copy {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+}
+.footer-copy .highlight { color: var(--cyan); }
+
+/* ── Responsive ─────────────────────────── */
+@media (max-width: 900px) {
+  nav { padding: 1rem 1.5rem; }
+  .nav-links { display: none; }
+  .nav-status { display: none; }
+  section { padding: 5rem 1.5rem; }
+  .data-streams { grid-template-columns: 1fr; gap: 2rem; }
+  .gauges-grid { grid-template-columns: repeat(2, 1fr); }
+  .fleet-grid { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
+  .timeline-section::before { left: 20px; }
+  .timeline-item,
+  .timeline-item:nth-child(odd) {
+    flex-direction: column;
+    text-align: left;
+  }
+  .timeline-item:nth-child(odd) .timeline-content,
+  .timeline-item:nth-child(even) .timeline-content {
+    padding-left: 3.5rem; padding-right: 0;
+  }
+  .timeline-dot { left: 20px; }
+  .hero-cta { flex-direction: column; align-items: center; }
+  .crew-card { grid-template-columns: 1fr; }
+  .crew-avatar-area { border-right: none; border-bottom: 1px solid var(--border-glow); }
+  .starmap-canvas { height: 300px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Canvas Layers ─────────────────────── -->
+<canvas id="starfield" aria-hidden="true"></canvas>
+<canvas id="particle-trail" aria-hidden="true"></canvas>
+
+<!-- ── Ambient Glow ──────────────────────── -->
+<div class="glow-orb cyan" aria-hidden="true"></div>
+<div class="glow-orb magenta" aria-hidden="true"></div>
+<div class="glow-orb gold" aria-hidden="true"></div>
+
+<!-- ═══ Navigation ════════════════════════ -->
+<nav id="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-logo">
+    <div class="logo-dot" aria-hidden="true"></div>
+    NEXUS STATION
+  </div>
+  <ul class="nav-links">
+    <li><a href="#dashboard" class="active">概览</a></li>
+    <li><a href="#fleet">舰队</a></li>
+    <li><a href="#starmap">星图</a></li>
+    <li><a href="#comms">通讯</a></li>
+    <li><a href="#timeline">编年史</a></li>
+    <li><a href="#commander">指挥官</a></li>
+    <li><a href="login.html">登录</a></li>
+  </ul>
+  <div class="nav-status">
+    <div class="live-dot" aria-hidden="true"></div>
+    RELAY ACTIVE
+  </div>
+</nav>
+
+<!-- ═══ Hero ══════════════════════════════ -->
+<section class="hero" id="hero">
+  <div class="hero-grid" aria-hidden="true"></div>
+
+  <div class="hero-status">
+    <span class="status-line" aria-hidden="true"></span>
+    COMMANDER'S LOG — NEXUS STATION OPS
+    <span class="status-line right" aria-hidden="true"></span>
+  </div>
+
+  <h1>
+    <span class="glitch" data-text="NEXUS">NEXUS</span><br>STATION
+  </h1>
+
+  <div class="hero-log">
+    <span class="log-bar" aria-hidden="true"></span>
+    星渊·Nova — 站点行动指挥官
+    <span class="log-bar" aria-hidden="true"></span>
+  </div>
+
+  <p class="hero-sub">已知宇宙边缘 · 最后的深空哨站</p>
+
+  <p class="hero-coords">
+    COORD 19h 45m 32.1s &nbsp;|&nbsp; DEC −28° 29′ 17″ &nbsp;|&nbsp; LY FROM SOL: 1,247
+  </p>
+
+  <div class="hero-cta">
+    <button class="btn-primary" onclick="window.location.href='login.html'">
+      进入系统
+    </button>
+    <button class="btn-ghost" onclick="document.getElementById('timeline').scrollIntoView({behavior:'smooth'})">
+      数据档案
+    </button>
+  </div>
+</section>
+
+<!-- ═══ About + Orbit Visual ══════════════ -->
+<section id="about">
+  <div class="data-streams">
+    <div class="reveal-left">
+      <div class="section-label">SEC-01 // 数据流</div>
+      <h2 class="section-title">连接已知宇宙的<br>量子节点</h2>
+      <p class="section-desc">
+        NEXUS Station 作为银河系外缘的超级量子通讯中继站，
+        每秒处理超过 4.7 万亿条跨星系数据流。通过纠缠态转发技术，
+        实现零延迟的星际信息传输网络。自 2387 年奠基以来，
+        已成为猎户臂上最重要的深空基础设施。
+      </p>
+    </div>
+    <div class="data-visual reveal-right">
+      <div class="orbit-ring" aria-hidden="true"></div>
+      <div class="orbit-ring" aria-hidden="true"></div>
+      <div class="orbit-ring" aria-hidden="true"></div>
+      <div class="orbit-core" aria-hidden="true"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Dashboard Gauges ══════════════════ -->
+<section id="dashboard">
+  <div class="dashboard">
+    <div class="dashboard-header reveal">
+      <div class="section-label">SEC-02 // 实时监控</div>
+      <h2 class="section-title">站点运行仪表盘</h2>
+      <p class="section-desc">核心系统状态指标，实时更新自量子中继核心数据总线</p>
+    </div>
+    <div class="gauges-grid">
+      <div class="gauge-card reveal" style="transition-delay:0.1s">
+        <canvas class="gauge-canvas" data-value="82" data-color="#00f0ff" data-label="1247" data-unit="LY" width="260" height="260"></canvas>
+        <div class="gauge-label">距太阳系</div>
+        <div class="gauge-trend stable">◆ STABLE</div>
+      </div>
+      <div class="gauge-card reveal" style="transition-delay:0.2s">
+        <canvas class="gauge-canvas" data-value="94" data-color="#44ff88" data-label="4.7" data-unit="T/s" width="260" height="260"></canvas>
+        <div class="gauge-label">数据吞吐量</div>
+        <div class="gauge-trend up">▲ +2.3%</div>
+      </div>
+      <div class="gauge-card reveal" style="transition-delay:0.3s">
+        <canvas class="gauge-canvas" data-value="67" data-color="#f0c040" data-label="386" data-unit="SHIPS" width="260" height="260"></canvas>
+        <div class="gauge-label">驻留舰船</div>
+        <div class="gauge-trend up">▲ +12</div>
+      </div>
+      <div class="gauge-card reveal" style="transition-delay:0.4s">
+        <canvas class="gauge-canvas" data-value="99.97" data-color="#00f0ff" data-label="99.97" data-unit="%" width="260" height="260"></canvas>
+        <div class="gauge-label">系统在线率</div>
+        <div class="gauge-trend stable">◆ NOMINAL</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Fleet ═════════════════════════════ -->
+<section id="fleet" class="fleet-section">
+  <div class="reveal">
+    <div class="section-label">SEC-03 // 舰队档案</div>
+    <h2 class="section-title">驻留舰队一览</h2>
+    <p class="section-desc">当前在港的主力舰级与特殊任务编队</p>
+  </div>
+  <div class="fleet-grid">
+    <div class="fleet-card reveal">
+      <div class="fleet-card-id">NXS-001 // ALPHA</div>
+      <div class="fleet-card-title">曙光级 深空巡洋舰</div>
+      <p class="fleet-card-text">
+        配备第四代曲率引擎与全光谱隐身系统，
+        可在无人星域独立执行长达 18 个标准年的巡逻任务。
+      </p>
+      <div class="fleet-card-specs">
+        <div class="spec-item">长度<span>1.2 KM</span></div>
+        <div class="spec-item">乘员<span>4,200</span></div>
+        <div class="spec-item">速度<span>0.4C</span></div>
+      </div>
+    </div>
+    <div class="fleet-card reveal">
+      <div class="fleet-card-id">NXS-017 // DELTA</div>
+      <div class="fleet-card-title">暗星 侦察舰</div>
+      <p class="fleet-card-text">
+        极致的隐匿能力，搭载量子感知阵列，
+        可探测 0.3 光年内的异常空间波动与未知信号。
+      </p>
+      <div class="fleet-card-specs">
+        <div class="spec-item">长度<span>340 M</span></div>
+        <div class="spec-item">乘员<span>180</span></div>
+        <div class="spec-item">速度<span>0.7C</span></div>
+      </div>
+    </div>
+    <div class="fleet-card reveal">
+      <div class="fleet-card-id">NXS-042 // OMEGA</div>
+      <div class="fleet-card-title">创世者 移动船坞</div>
+      <p class="fleet-card-text">
+        银河系最大的移动造船平台，
+        可在深空中建造并维护泰坦级战舰与空间站模块。
+      </p>
+      <div class="fleet-card-specs">
+        <div class="spec-item">长度<span>8.6 KM</span></div>
+        <div class="spec-item">乘员<span>28,000</span></div>
+        <div class="spec-item">速度<span>0.05C</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Star Map ══════════════════════════ -->
+<section id="starmap">
+  <div class="starmap-section">
+    <div class="reveal">
+      <div class="section-label">SEC-04 // 区域星图</div>
+      <h2 class="section-title">猎户臂外缘星域</h2>
+      <p class="section-desc">NEXUS 通讯覆盖范围内的已知星系及航路节点</p>
+    </div>
+    <div class="starmap-container reveal" style="margin-top:2.5rem">
+      <canvas id="starmap-canvas" class="starmap-canvas"></canvas>
+      <div class="starmap-hud">
+        覆盖范围: <span class="highlight">48.6 LY</span> &nbsp;|&nbsp;
+        活跃节点: <span class="highlight">7/9</span> &nbsp;|&nbsp;
+        <span id="starmap-coord">--</span>
+      </div>
+      <div id="starmap-tooltip" class="starmap-tooltip">
+        <div class="tt-name"></div>
+        <div class="tt-dist"></div>
+        <div class="tt-status"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Communication Feed ════════════════ -->
+<section id="comms">
+  <div class="comms-section">
+    <div class="reveal">
+      <div class="section-label">SEC-05 // 通讯频道</div>
+      <h2 class="section-title">实时通讯流</h2>
+      <p class="section-desc">截取自 NEXUS 量子中继网络的近期通讯记录</p>
+    </div>
+    <div class="comms-feed" id="comms-feed">
+      <!-- Messages injected by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Timeline ══════════════════════════ -->
+<section id="timeline">
+  <div class="timeline-section">
+    <div class="reveal" style="text-align:center;margin-bottom:4rem;">
+      <div class="section-label" style="justify-content:center;">SEC-06 // 编年史</div>
+      <h2 class="section-title">NEXUS 站时间线</h2>
+    </div>
+    <div class="timeline-item reveal">
+      <div class="timeline-content">
+        <div class="timeline-year">2387.03.15</div>
+        <div class="timeline-title">奠基仪式</div>
+        <p class="timeline-desc">人类联邦第三议会批准在猎户臂边缘建造深空量子中继枢纽，命名为 NEXUS。</p>
+      </div>
+      <div class="timeline-dot"></div>
+      <div class="timeline-content"></div>
+    </div>
+    <div class="timeline-item reveal">
+      <div class="timeline-content"></div>
+      <div class="timeline-dot"></div>
+      <div class="timeline-content">
+        <div class="timeline-year">2391.11.02</div>
+        <div class="timeline-title">核心上线</div>
+        <p class="timeline-desc">量子纠缠中继核心首次激活，成功与 37 个已知星系建立零延迟通讯链路。</p>
+      </div>
+    </div>
+    <div class="timeline-item reveal">
+      <div class="timeline-content">
+        <div class="timeline-year">2398.06.20</div>
+        <div class="timeline-title">首次接触</div>
+        <p class="timeline-desc">NEXUS 截获来自仙女座方向的未知结构化信号——人类首次确认地外智慧文明存在。</p>
+      </div>
+      <div class="timeline-dot"></div>
+      <div class="timeline-content"></div>
+    </div>
+    <div class="timeline-item reveal">
+      <div class="timeline-content"></div>
+      <div class="timeline-dot"></div>
+      <div class="timeline-content">
+        <div class="timeline-year">2401.01.01</div>
+        <div class="timeline-title">星际黎明</div>
+        <p class="timeline-desc">NEXUS 站正式升级为跨文明外交中转站，首批非人类访客抵达港口。星渊·Nova 获任命为行动指挥官。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Terminal ═══════════════════════════ -->
+<section id="system">
+  <div class="terminal-section reveal">
+    <div class="section-label">SEC-07 // 系统日志</div>
+    <h2 class="section-title">核心系统状态</h2>
+    <div class="terminal">
+      <div class="terminal-header">
+        <div class="terminal-dot r" aria-hidden="true"></div>
+        <div class="terminal-dot y" aria-hidden="true"></div>
+        <div class="terminal-dot g" aria-hidden="true"></div>
+        <span class="terminal-title-bar">NEXUS_CORE // SYSTEM_LOG</span>
+      </div>
+      <div class="terminal-body" id="terminal-body">
+        <div class="terminal-line"><span class="prompt">[NEXUS]$</span> system status --full</div>
+        <div class="terminal-line"><span class="success">[OK]</span> Quantum relay core ........... ONLINE</div>
+        <div class="terminal-line"><span class="success">[OK]</span> Entanglement matrix .......... STABLE</div>
+        <div class="terminal-line"><span class="success">[OK]</span> Subspace antenna array ....... ACTIVE (386/400)</div>
+        <div class="terminal-line"><span class="warn">[WARN]</span> Dark matter reserves ........ 67.2% — RECHARGING</div>
+        <div class="terminal-line"><span class="success">[OK]</span> Gravitational shielding ...... NOMINAL</div>
+        <div class="terminal-line"><span class="error">[ALERT]</span> Unknown signal .............. DETECTED — Sector 12α</div>
+        <div class="terminal-line"><span class="prompt">[CMDR.星渊]$</span> signal track --priority alpha</div>
+        <div class="terminal-line"><span class="success">[OK]</span> Tracking initiated ........... Sector 12α → 14β</div>
+        <div class="terminal-line"><span class="prompt">[CMDR.星渊]$</span> awaiting further command_</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Commander Profile ═════════════════ -->
+<section id="commander">
+  <div class="crew-section">
+    <div class="reveal">
+      <div class="section-label">SEC-08 // 指挥官档案</div>
+      <h2 class="section-title">站点指挥官</h2>
+    </div>
+    <div class="crew-card reveal" style="margin-top:3rem;">
+      <div class="crew-avatar-area">
+        <div class="crew-avatar">
+          <div class="avatar-ring" aria-hidden="true"></div>
+          <span class="crew-avatar-initials">SN</span>
+        </div>
+        <div class="crew-avatar-label">Commander</div>
+        <div class="crew-avatar-id">ID: NXS-CMDR-0001</div>
+      </div>
+      <div class="crew-info">
+        <h3 class="crew-name">星渊 · Nova</h3>
+        <div class="crew-title">NEXUS Station — 行动指挥官 / Operations Commander</div>
+        <p class="crew-bio">
+          人类联邦深空指挥部资深军官，量子导航理论先驱。2386 年以最年轻纪录通过联邦深空指挥官认证，
+          历任"曙光级"巡洋舰副舰长、第七探索舰队战术指挥。2401 年 NEXUS 站升级为跨文明外交中转站后，
+          被联邦议会直接任命为首任行动指挥官，负责全站 28,000 名人员的安全与跨文明外交协调。
+          擅长在未知环境中做出果断决策，以冷静著称，船员私下称其为"最后的守望者"。
+        </p>
+        <div class="crew-stats-row">
+          <div class="crew-stat">服役年限<span class="value">15 年</span></div>
+          <div class="crew-stat">指挥任务<span class="value">142</span></div>
+          <div class="crew-stat">首次接触<span class="value">3 次</span></div>
+          <div class="crew-stat">评级<span class="value">S+</span></div>
+        </div>
+        <blockquote class="crew-quote">
+          "我们站在已知的最远处——不是为了征服，而是为了让下一个文明知道，有人曾在这里亮过灯。"
+          <span class="attribution">— 星渊·Nova，NEXUS 站指挥日志 #0041，2401.03.17</span>
+        </blockquote>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Footer ════════════════════════════ -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">NEXUS STATION</div>
+      <p class="footer-desc">
+        银河系边缘的最后堡垒，连接已知与未知的桥梁。
+        人类联邦深空探索计划核心设施。
+      </p>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">导航</div>
+      <a href="#dashboard">站点概览</a>
+      <a href="#fleet">舰队档案</a>
+      <a href="#starmap">区域星图</a>
+      <a href="#comms">通讯频道</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">资源</div>
+      <a href="#">量子通讯协议</a>
+      <a href="#">深空航路图</a>
+      <a href="#">星际数据库</a>
+      <a href="#">AI 助手接口</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">关于</div>
+      <a href="#commander">指挥官档案</a>
+      <a href="#timeline">编年史</a>
+      <a href="#">加入舰队</a>
+      <a href="#">紧急通讯</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-copy">
+      © <span class="highlight">2401</span> NEXUS STATION — HUMAN FEDERATION DEEP SPACE INITIATIVE
+    </div>
+    <div class="footer-copy">
+      SYSTEM v4.7.1 &nbsp;|&nbsp; QUANTUM RELAY: ACTIVE &nbsp;|&nbsp; CMDR: 星渊·Nova
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ══════════════════════════════════════════════
+   NEXUS STATION — Interactive Systems
+   ══════════════════════════════════════════════ */
+
+const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+const lerp = (a, b, t) => a + (b - a) * t;
+const mouse = { x: -9999, y: -9999 };
+document.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+
+/* ── 1. STARFIELD ──────────────────────── */
+(() => {
+  const cv = document.getElementById('starfield');
+  const cx = cv.getContext('2d');
+  let stars = [];
+  const N = 500;
+  function resize() { cv.width = innerWidth; cv.height = innerHeight; }
+  function init() {
+    stars = Array.from({length: N}, () => ({
+      x: Math.random() * cv.width,
+      y: Math.random() * cv.height,
+      r: Math.random() * 1.4 + 0.3,
+      a: Math.random() * 0.7 + 0.2,
+      s: Math.random() * 0.0005 + 0.0002,
+      p: Math.random() * Math.PI * 2,
+      d: (Math.random() - 0.5) * 0.06
+    }));
+  }
+  function draw(t) {
+    cx.clearRect(0, 0, cv.width, cv.height);
+    // Nebula
+    [ [0.3,0.4,'rgba(0,240,255,0.012)'],
+      [0.7,0.6,'rgba(255,0,170,0.008)']
+    ].forEach(([fx,fy,col]) => {
+      const g = cx.createRadialGradient(cv.width*fx,cv.height*fy,0,cv.width*fx,cv.height*fy,cv.width*0.35);
+      g.addColorStop(0,col); g.addColorStop(1,'transparent');
+      cx.fillStyle = g; cx.fillRect(0,0,cv.width,cv.height);
+    });
+    for (const s of stars) {
+      const tw = Math.sin(t*s.s*1000+s.p)*0.3+0.7;
+      const a = s.a*tw;
+      s.x += s.d; s.y -= 0.015;
+      if(s.x<0)s.x=cv.width; if(s.x>cv.width)s.x=0;
+      if(s.y<0){s.y=cv.height;s.x=Math.random()*cv.width;}
+      cx.beginPath(); cx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      cx.fillStyle=`rgba(200,220,255,${a})`; cx.fill();
+      if(s.r>1.1){cx.beginPath();cx.arc(s.x,s.y,s.r*3,0,Math.PI*2);cx.fillStyle=`rgba(100,180,255,${a*0.08})`;cx.fill();}
+    }
+    requestAnimationFrame(draw);
+  }
+  resize(); init(); requestAnimationFrame(draw);
+  addEventListener('resize', () => { resize(); init(); });
+})();
+
+/* ── 2. MOUSE PARTICLE TRAIL ───────────── */
+(() => {
+  const cv = document.getElementById('particle-trail');
+  const cx = cv.getContext('2d');
+  let pts = [];
+  function resize() { cv.width = innerWidth; cv.height = innerHeight; }
+  resize(); addEventListener('resize', resize);
+  function spawn(x,y) {
+    for(let i=0;i<2;i++) pts.push({
+      x,y, vx:(Math.random()-0.5)*1.2, vy:(Math.random()-0.5)*1.2-0.5,
+      life:1, decay:Math.random()*0.015+0.01, r:Math.random()*2+0.5
+    });
+  }
+  let lx=-1,ly=-1;
+  document.addEventListener('mousemove', e => {
+    const dx=e.clientX-lx, dy=e.clientY-ly;
+    if(dx*dx+dy*dy>100){spawn(e.clientX,e.clientY);lx=e.clientX;ly=e.clientY;}
+  });
+  function update() {
+    cx.clearRect(0,0,cv.width,cv.height);
+    for(let i=pts.length-1;i>=0;i--) {
+      const p=pts[i];
+      p.x+=p.vx; p.y+=p.vy; p.life-=p.decay;
+      if(p.life<=0){pts.splice(i,1);continue;}
+      cx.beginPath();cx.arc(p.x,p.y,p.r*p.life,0,Math.PI*2);
+      cx.fillStyle=`rgba(0,240,255,${p.life*0.5})`;cx.fill();
+      cx.beginPath();cx.arc(p.x,p.y,p.r*p.life*2.5,0,Math.PI*2);
+      cx.fillStyle=`rgba(0,240,255,${p.life*0.1})`;cx.fill();
+    }
+    if(pts.length>200)pts.splice(0,pts.length-200);
+    requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+})();
+
+/* ── 3. SCROLL REVEAL ──────────────────── */
+(() => {
+  const els = document.querySelectorAll('.reveal,.reveal-left,.reveal-right');
+  const obs = new IntersectionObserver(es => {
+    es.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.12 });
+  els.forEach(el => obs.observe(el));
+})();
+
+/* ── 4. NAVIGATION ─────────────────────── */
+(() => {
+  const nav = document.getElementById('nav');
+  const links = document.querySelectorAll('.nav-links a');
+  const secs = ['dashboard','fleet','starmap','comms','timeline','commander'];
+  addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 80), {passive:true});
+  const sObs = new IntersectionObserver(es => {
+    es.forEach(e => {
+      if(e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const link = document.querySelector(`.nav-links a[href="#${e.target.id}"]`);
+        if(link) link.classList.add('active');
+      }
+    });
+  }, { threshold: 0.3 });
+  secs.forEach(id => { const el=document.getElementById(id); if(el)sObs.observe(el); });
+})();
+
+/* ── 5. GAUGE ANIMATION ────────────────── */
+(() => {
+  const gauges = document.querySelectorAll('.gauge-canvas');
+  const done = new Set();
+  function drawGauge(cv, prog) {
+    const cx=cv.getContext('2d'), w=cv.width, h=cv.height, r=w*0.36, lw=w*0.045;
+    cx.clearRect(0,0,w,h);
+    // BG arc
+    cx.beginPath();cx.arc(w/2,h/2,r,135*Math.PI/180,405*Math.PI/180);
+    cx.strokeStyle='rgba(0,240,255,0.08)';cx.lineWidth=lw;cx.lineCap='round';cx.stroke();
+    // Value arc
+    const val=parseFloat(cv.dataset.value), col=cv.dataset.color;
+    const ea=(135+(val/100)*270*prog)*Math.PI/180;
+    cx.beginPath();cx.arc(w/2,h/2,r,135*Math.PI/180,ea);
+    cx.strokeStyle=col;cx.lineWidth=lw;cx.lineCap='round';
+    cx.shadowColor=col;cx.shadowBlur=12;cx.stroke();cx.shadowBlur=0;
+    // Ticks
+    for(let i=0;i<=10;i++){
+      const a=(135+i*27)*Math.PI/180;
+      const ri=r-lw*1.4, ro=r-lw*2.2;
+      cx.beginPath();cx.moveTo(w/2+Math.cos(a)*ri,h/2+Math.sin(a)*ri);
+      cx.lineTo(w/2+Math.cos(a)*ro,h/2+Math.sin(a)*ro);
+      cx.strokeStyle=i<=(val/10)?`rgba(0,240,255,${0.3*prog})`:'rgba(0,240,255,0.05)';
+      cx.lineWidth=1;cx.stroke();
+    }
+    // Text
+    const lbl=cv.dataset.label, unit=cv.dataset.unit;
+    const disp=(parseFloat(lbl)*prog).toFixed(lbl.includes('.')?2:0);
+    cx.textAlign='center';cx.textBaseline='middle';
+    cx.font=`bold ${w*0.14}px Orbitron,sans-serif`;cx.fillStyle=`rgba(255,255,255,${prog})`;
+    cx.fillText(disp,w/2,h/2-w*0.02);
+    cx.font=`${w*0.06}px 'Share Tech Mono',monospace`;cx.fillStyle=`rgba(90,96,128,${prog})`;
+    cx.fillText(unit,w/2,h/2+w*0.1);
+  }
+  const obs = new IntersectionObserver(es => {
+    es.forEach(e => {
+      if(e.isIntersecting && !done.has(e.target)){
+        done.add(e.target);
+        const start=performance.now(), dur=1800;
+        (function tick(now){
+          const t=Math.min((now-start)/dur,1);
+          drawGauge(e.target,easeOutCubic(t));
+          if(t<1)requestAnimationFrame(tick);
+        })(start);
+      }
+    });
+  }, { threshold: 0.4 });
+  gauges.forEach(g => { drawGauge(g,0); obs.observe(g); });
+})();
+
+/* ── 6. STAR MAP ───────────────────────── */
+(() => {
+  const cv = document.getElementById('starmap-canvas');
+  const tip = document.getElementById('starmap-tooltip');
+  const coordEl = document.getElementById('starmap-coord');
+  if(!cv) return;
+  const cx = cv.getContext('2d');
+  const sys = [
+    {name:'NEXUS 站',   x:.50,y:.50, st:'active', dist:'0 LY',    type:'枢纽站', role:'当前'},
+    {name:'织女星域',   x:.25,y:.30, st:'active', dist:'8.2 LY',  type:'贸易节点',role:'已连接'},
+    {name:'暗影星团',   x:.78,y:.25, st:'active', dist:'12.4 LY', type:'观测站',  role:'已连接'},
+    {name:'回声星云',   x:.15,y:.65, st:'active', dist:'18.7 LY', type:'信号源',  role:'已连接'},
+    {name:'深蓝星域',   x:.42,y:.18, st:'active', dist:'6.1 LY',  type:'资源区',  role:'已连接'},
+    {name:'熔炉星系',   x:.70,y:.68, st:'active', dist:'22.3 LY', type:'工业区',  role:'已连接'},
+    {name:'寂静深渊',   x:.88,y:.50, st:'warning',dist:'35.1 LY', type:'禁区',    role:'受限'},
+    {name:'极光走廊',   x:.35,y:.78, st:'active', dist:'14.9 LY', type:'航路',    role:'已连接'},
+    {name:'未知信号源', x:.62,y:.38, st:'alert',  dist:'未知',    type:'异常',    role:'追踪中'},
+  ];
+  const conn = [[0,1],[0,2],[0,3],[0,4],[0,5],[0,7],[1,4],[2,6],[3,7],[4,2],[5,6],[1,3]];
+  let hover = null, init = false;
+  function resize(){const r=cv.parentElement.getBoundingClientRect();cv.width=r.width;cv.height=cv.offsetHeight;}
+  resize(); addEventListener('resize',resize);
+  function pos(s){return{x:s.x*cv.width,y:s.y*cv.height};}
+  function draw(p){
+    cx.clearRect(0,0,cv.width,cv.height);
+    const prog=easeOutCubic(Math.min(p,1));
+    // Grid
+    cx.strokeStyle='rgba(0,240,255,0.03)';cx.lineWidth=1;
+    for(let x=0;x<cv.width;x+=40){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,cv.height);cx.stroke();}
+    for(let y=0;y<cv.height;y+=40){cx.beginPath();cx.moveTo(0,y);cx.lineTo(cv.width,y);cx.stroke();}
+    // Lines
+    conn.forEach(([a,b])=>{
+      const pa=pos(sys[a]),pb=pos(sys[b]);
+      const act=sys[a].st!=='warning'&&sys[b].st!=='warning';
+      cx.beginPath();cx.moveTo(pa.x,pa.y);cx.lineTo(lerp(pa.x,pb.x,prog),lerp(pa.y,pb.y,prog));
+      cx.strokeStyle=act?`rgba(0,240,255,${0.12*prog})`:`rgba(240,192,64,${0.08*prog})`;
+      cx.lineWidth=1;cx.setLineDash(act?[]:[4,4]);cx.stroke();cx.setLineDash([]);
+    });
+    // Pulse
+    const nx=pos(sys[0]);
+    const pr=((Date.now()/1000)%4)/4*Math.max(cv.width,cv.height)*0.5;
+    cx.beginPath();cx.arc(nx.x,nx.y,pr*prog,0,Math.PI*2);
+    cx.strokeStyle=`rgba(0,240,255,${0.06*(1-pr/(Math.max(cv.width,cv.height)*0.5))})`;
+    cx.lineWidth=1;cx.stroke();
+    // Nodes
+    sys.forEach((s,i)=>{
+      const pt=pos(s);
+      const dx=lerp(nx.x,pt.x,prog), dy=lerp(nx.y,pt.y,prog);
+      const hov=hover===i, cur=s.role==='当前';
+      let col,gc,sz;
+      if(s.st==='active'){col='#00f0ff';gc='rgba(0,240,255,';}
+      else if(s.st==='warning'){col='#f0c040';gc='rgba(240,192,64,';}
+      else{col='#ff00aa';gc='rgba(255,0,170,';}
+      sz=cur?5:hov?4.5:3;
+      // Glow
+      cx.beginPath();cx.arc(dx,dy,hov?sz*5:sz*3,0,Math.PI*2);
+      cx.fillStyle=`${gc}${hov?0.12:0.05})`;cx.fill();
+      // Core
+      cx.beginPath();cx.arc(dx,dy,sz,0,Math.PI*2);
+      cx.fillStyle=col;cx.shadowColor=col;cx.shadowBlur=hov?15:8;cx.fill();cx.shadowBlur=0;
+      // Current ring
+      if(cur){cx.beginPath();cx.arc(dx,dy,sz+4,0,Math.PI*2);
+        cx.strokeStyle=`rgba(0,240,255,${0.3+Math.sin(Date.now()/500)*0.15})`;cx.lineWidth=1;cx.stroke();}
+      // Label
+      cx.font=`${hov?'11px':'9px'} 'Share Tech Mono',monospace`;
+      cx.fillStyle=hov?'#fff':'rgba(208,216,240,0.5)';cx.textAlign='center';
+      cx.fillText(s.name,dx,dy-sz-8);
+    });
+  }
+  cv.addEventListener('mousemove', e => {
+    const r=cv.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+    hover=null; let cl=Infinity;
+    sys.forEach((s,i)=>{const p=pos(s);const d=Math.hypot(p.x-mx,p.y-my);if(d<20&&d<cl){cl=d;hover=i;}});
+    coordEl.textContent=`X:${(mx/cv.width*100).toFixed(1)} Y:${(my/cv.height*100).toFixed(1)}`;
+    if(hover!==null){
+      const s=sys[hover];
+      tip.querySelector('.tt-name').textContent=s.name;
+      tip.querySelector('.tt-dist').textContent=`${s.type} · ${s.dist}`;
+      const se=tip.querySelector('.tt-status');
+      se.textContent=s.role;se.className='tt-status'+(s.st==='warning'?' warn':s.st==='alert'?' alert':'');
+      tip.style.left=(mx+16)+'px';tip.style.top=(my-10)+'px';tip.classList.add('visible');
+    }else tip.classList.remove('visible');
+  });
+  cv.addEventListener('mouseleave',()=>{hover=null;tip.classList.remove('visible');});
+  const sObs=new IntersectionObserver(es=>{
+    if(es[0]?.isIntersecting&&!init){
+      init=true;const start=performance.now(),dur=2000;
+      (function anim(now){draw(Math.min((now-start)/dur,1));
+        if((now-start)/dur<1)requestAnimationFrame(anim);else requestAnimationFrame(loop);
+      })(start);
+    }
+  },{threshold:0.2});
+  sObs.observe(cv.parentElement);
+  function loop(){draw(1);requestAnimationFrame(loop);}
+})();
+
+/* ── 7. COMMUNICATION FEED ─────────────── */
+(() => {
+  const msgs = [
+    {cls:'routine', sender:'COMMS-OFFICER Li Wei',       time:'2401.05.27 // 08:14:32',
+     text:'量子中继链路 #37 — #42 信号稳定，所有子频段在线。今日通讯负荷 <span class="highlight">23.4%</span>，属正常范围。'},
+    {cls:'priority',sender:'SCIENCE-DIV Dr. Okafor',     time:'2401.05.27 // 09:02:17',
+     text:'异常频谱分析报告已上传：Sector 12α 信号呈现<span class="highlight">非随机结构</span>，与已知自然现象不匹配。建议提升监测优先级。'},
+    {cls:'critical',sender:'NEXUS-AI SENTINEL',          time:'2401.05.27 // 09:31:45',
+     text:'<span class="alert-text">[PRIORITY ALPHA]</span> Sector 12α 检测到非授权量子纠缠信号。信号特征与 2398 年首次接触信号<span class="alert-text">高度吻合</span>。已通知指挥官。'},
+    {cls:'routine', sender:'FLEET-OPS Cdr. Tanaka',      time:'2401.05.27 // 10:15:08',
+     text:'暗星侦察舰（NXS-017）已完成 Sector 12α 扫描任务，预计 <span class="highlight">14:00</span> 返港。船体状态良好，无异常。'},
+    {cls:'priority',sender:'CMDR. 星渊·Nova',             time:'2401.05.27 // 10:42:33',
+     text:'收到。提升 Sector 12α 至 <span class="alert-text">ALPHA 优先级</span>。调派曙光级（NXS-001）前往待命区域。所有传感器切换至广谱被动监听模式。'},
+    {cls:'routine', sender:'DIPLOMATIC-CORPS Attaché Vasquez', time:'2401.05.27 // 11:08:51',
+     text:'来自仙女座联合体的外交使团已确认将于 <span class="highlight">2401.06.15</span> 抵达。请求准备 B-7 泊位及外交礼宾通道。'},
+    {cls:'priority',sender:'NEXUS-AI SENTINEL',          time:'2401.05.27 // 12:00:01',
+     text:'系统自检完成。量子核心温度 <span class="highlight">3.2mK</span>，暗物质储备 <span class="highlight">67.2%</span> 且持续充能中。建议指挥官审阅今日完整日志。'}
+  ];
+  const feed = document.getElementById('comms-feed');
+  if(!feed) return;
+  msgs.forEach(m => {
+    const el=document.createElement('div');
+    el.className='comm-msg';
+    el.innerHTML=`<span class="comm-class ${m.cls}">${m.cls.toUpperCase()}</span>
+      <div class="comm-body"><div class="comm-header">
+        <span class="comm-sender">${m.sender}</span><span class="comm-time">${m.time}</span>
+      </div><p class="comm-text">${m.text}</p></div>`;
+    feed.appendChild(el);
+  });
+  const obs=new IntersectionObserver(es=>{
+    if(es[0]?.isIntersecting){
+      feed.querySelectorAll('.comm-msg').forEach((m,i)=>setTimeout(()=>m.classList.add('visible'),i*180));
+      obs.disconnect();
+    }
+  },{threshold:0.1});
+  obs.observe(feed);
+})();
+
+/* ── 8. TERMINAL TYPEWRITER ─────────────── */
+(() => {
+  const tb=document.getElementById('terminal-body');
+  if(!tb) return;
+  const lines=tb.querySelectorAll('.terminal-line');
+  let done=false;
+  const obs=new IntersectionObserver(es=>{
+    if(es[0]?.isIntersecting&&!done){
+      done=true;
+      lines.forEach((l,i)=>setTimeout(()=>l.classList.add('typed'),i*250));
+      obs.disconnect();
+    }
+  },{threshold:0.3});
+  obs.observe(tb);
+})();
+
+/* ── 9. HERO PARALLAX ──────────────────── */
+(() => {
+  const hero=document.querySelector('.hero'), grid=document.querySelector('.hero-grid');
+  if(!hero||!grid) return;
+  addEventListener('scroll',()=>{
+    if(scrollY<innerHeight){
+      hero.style.opacity=1-(scrollY/innerHeight)*0.6;
+      grid.style.transform=`translateY(${scrollY*0.15}px)`;
+    }
+  },{passive:true});
+})();
+
+/* ── Console branding ──────────────────── */
+console.log('%c NEXUS STATION %c v4.7.1 %c CMDR: 星渊·Nova ',
+  'background:#00f0ff;color:#030108;font-weight:bold;padding:4px 8px;',
+  'background:#0a0a24;color:#00f0ff;padding:4px 8px;',
+  'background:#0a0a24;color:#f0c040;padding:4px 8px;');
+</script>
+</body>
+</html>

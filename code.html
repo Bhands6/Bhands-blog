@@ -1,0 +1,2297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚡ NEXUS BLOG — 赛博空间</title>
+<style>
+  /* ========== 全局基础 ========== */
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap');
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  :root {
+    --neon-cyan: #00f0ff;
+    --neon-pink: #ff2d78;
+    --neon-purple: #b44aff;
+    --neon-blue: #4a9eff;
+    --dark-bg: #0a0a1a;
+    --card-bg: rgba(15,15,40,0.7);
+    --glass: rgba(255,255,255,0.03);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    background: var(--dark-bg);
+    color: #c8d6e5;
+    overflow-x: hidden;
+    cursor: none;
+    min-height: 100vh;
+  }
+
+  /* ========== 自定义光标 ========== */
+  .cursor {
+    width: 20px; height: 20px;
+    border: 2px solid var(--neon-cyan);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 10000;
+    transition: transform 0.15s, background 0.15s;
+    transform: translate(-50%, -50%);
+    mix-blend-mode: difference;
+  }
+  .cursor-dot {
+    width: 6px; height: 6px;
+    background: var(--neon-cyan);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 10001;
+    transform: translate(-50%, -50%);
+    transition: transform 0.05s;
+  }
+  .cursor.hover {
+    transform: translate(-50%,-50%) scale(2);
+    background: rgba(0,240,255,0.15);
+    border-color: var(--neon-pink);
+  }
+
+  /* ========== 星空粒子背景 ========== */
+  #particle-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ========== 扫描线效果 ========== */
+  .scanlines {
+    position: fixed; top:0; left:0;
+    width:100%; height:100%;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,240,255,0.015) 2px,
+      rgba(0,240,255,0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 2;
+    animation: scanlineMove 8s linear infinite;
+  }
+  @keyframes scanlineMove {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(4px); }
+  }
+
+  /* ========== 霓虹光晕背景装饰 ========== */
+  .bg-glow {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.15;
+    pointer-events: none;
+    z-index: 1;
+    animation: glowFloat 15s ease-in-out infinite;
+  }
+  .bg-glow-1 {
+    width: 600px; height: 600px;
+    background: var(--neon-purple);
+    top: -200px; right: -100px;
+    animation-delay: 0s;
+  }
+  .bg-glow-2 {
+    width: 500px; height: 500px;
+    background: var(--neon-cyan);
+    bottom: -150px; left: -100px;
+    animation-delay: -5s;
+  }
+  .bg-glow-3 {
+    width: 400px; height: 400px;
+    background: var(--neon-pink);
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    animation-delay: -10s;
+    opacity: 0.08;
+  }
+  @keyframes glowFloat {
+    0%,100% { transform: translate(0,0) scale(1); }
+    25% { transform: translate(30px,-40px) scale(1.1); }
+    50% { transform: translate(-20px,30px) scale(0.9); }
+    75% { transform: translate(40px,20px) scale(1.05); }
+  }
+
+  /* ========== 导航栏 ========== */
+  nav {
+    position: fixed; top: 0; left: 0;
+    width: 100%;
+    z-index: 1000;
+    padding: 18px 50px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(10,10,26,0.6);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0,240,255,0.1);
+    transition: all 0.4s;
+  }
+  nav.scrolled {
+    padding: 12px 50px;
+    background: rgba(10,10,26,0.9);
+    border-bottom: 1px solid rgba(0,240,255,0.25);
+    box-shadow: 0 0 30px rgba(0,240,255,0.08);
+  }
+
+  .logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 3px;
+    position: relative;
+  }
+  .logo::after {
+    content: '⚡';
+    position: absolute;
+    right: -30px;
+    top: -2px;
+    font-size: 1.2rem;
+    -webkit-text-fill-color: var(--neon-cyan);
+    animation: lightningBolt 2s ease-in-out infinite;
+  }
+  @keyframes lightningBolt {
+    0%,100% { opacity: 1; transform: rotate(0deg) scale(1); }
+    15% { opacity: 0.3; transform: rotate(-10deg) scale(1.2); }
+    30% { opacity: 1; transform: rotate(5deg) scale(0.9); }
+    50% { opacity: 0.5; transform: rotate(-5deg) scale(1.1); }
+    70% { opacity: 1; transform: rotate(0deg) scale(1); }
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 35px;
+    list-style: none;
+    align-items: center;
+  }
+  .nav-links a {
+    color: #8899aa;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    position: relative;
+    padding: 5px 0;
+    transition: color 0.3s;
+  }
+  .nav-links a::before {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: 0;
+    width: 0; height: 2px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+    transition: width 0.3s;
+    box-shadow: 0 0 10px var(--neon-cyan);
+  }
+  .nav-links a:hover {
+    color: var(--neon-cyan);
+    text-shadow: 0 0 20px rgba(0,240,255,0.5);
+  }
+  .nav-links a:hover::before { width: 100%; }
+
+  .nav-cta {
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+    color: var(--dark-bg) !important;
+    padding: 10px 24px !important;
+    border-radius: 30px;
+    font-weight: 700 !important;
+    transition: all 0.3s !important;
+    box-shadow: 0 0 20px rgba(0,240,255,0.3);
+  }
+  .nav-cta::before { display: none; }
+  .nav-cta:hover {
+    box-shadow: 0 0 40px rgba(0,240,255,0.6) !important;
+    transform: translateY(-2px);
+    text-shadow: none !important;
+    color: var(--dark-bg) !important;
+    -webkit-text-fill-color: var(--dark-bg);
+  }
+
+  /* 汉堡菜单 */
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+  }
+  .hamburger span {
+    width: 28px; height: 2px;
+    background: var(--neon-cyan);
+    transition: all 0.3s;
+    border-radius: 2px;
+  }
+
+  /* ========== Hero 区域 ========== */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 120px 50px 80px;
+    overflow: hidden;
+  }
+
+  /* 六边形网格背景 */
+  .hex-grid {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image:
+      linear-gradient(rgba(0,240,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,240,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: gridPan 20s linear infinite;
+  }
+  @keyframes gridPan {
+    0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
+    100% { transform: perspective(500px) rotateX(60deg) translateY(60px); }
+  }
+
+  .hero-content {
+    max-width: 900px;
+    text-align: center;
+    position: relative;
+    z-index: 5;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    border: 1px solid rgba(0,240,255,0.3);
+    border-radius: 50px;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    color: var(--neon-cyan);
+    margin-bottom: 30px;
+    animation: fadeInDown 1s ease 0.2s both;
+    background: rgba(0,240,255,0.05);
+  }
+  .hero-badge .dot {
+    width: 8px; height: 8px;
+    background: var(--neon-cyan);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+    box-shadow: 0 0 10px var(--neon-cyan);
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.5); }
+  }
+
+  .hero h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 4.5rem;
+    font-weight: 900;
+    line-height: 1.1;
+    margin-bottom: 25px;
+    animation: fadeInUp 1s ease 0.4s both;
+  }
+
+  /* 渐变文字 */
+  .gradient-text {
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink), var(--neon-cyan));
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShift 4s ease infinite;
+  }
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* 打字机效果 */
+  .typewriter {
+    font-family: 'Fira Code', monospace;
+    font-size: 1.25rem;
+    color: var(--neon-cyan);
+    margin-bottom: 35px;
+    animation: fadeInUp 1s ease 0.6s both;
+  }
+  .typewriter .typing {
+    border-right: 2px solid var(--neon-cyan);
+    padding-right: 5px;
+    animation: blink 0.8s step-end infinite;
+  }
+  @keyframes blink {
+    50% { border-color: transparent; }
+  }
+
+  .hero-desc {
+    font-size: 1.15rem;
+    line-height: 1.8;
+    color: #8899bb;
+    max-width: 650px;
+    margin: 0 auto 45px;
+    animation: fadeInUp 1s ease 0.8s both;
+  }
+
+  .hero-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    animation: fadeInUp 1s ease 1s both;
+  }
+
+  .btn {
+    padding: 15px 40px;
+    border-radius: 50px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-decoration: none;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+    cursor: none;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+    color: var(--dark-bg);
+    box-shadow: 0 0 30px rgba(0,240,255,0.3);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 0 60px rgba(0,240,255,0.6);
+    transform: translateY(-4px) scale(1.02);
+  }
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: linear-gradient(transparent, rgba(255,255,255,0.2), transparent);
+    transform: rotate(45deg) translateX(-100%);
+    transition: transform 0.6s;
+  }
+  .btn-primary:hover::after {
+    transform: rotate(45deg) translateX(100%);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--neon-cyan);
+    border: 2px solid rgba(0,240,255,0.4);
+  }
+  .btn-outline:hover {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 40px rgba(0,240,255,0.2), inset 0 0 30px rgba(0,240,255,0.1);
+    transform: translateY(-4px);
+  }
+
+  /* ========== 浮动装饰元素 ========== */
+  .floating-elements {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 3;
+    overflow: hidden;
+  }
+  .float-shape {
+    position: absolute;
+    border: 1px solid rgba(0,240,255,0.1);
+    animation: floatShape 20s ease-in-out infinite;
+  }
+  .float-shape:nth-child(1) {
+    width: 80px; height: 80px;
+    top: 15%; left: 8%;
+    border-radius: 15px;
+    transform: rotate(45deg);
+    animation-delay: 0s;
+  }
+  .float-shape:nth-child(2) {
+    width: 50px; height: 50px;
+    top: 60%; right: 12%;
+    border-radius: 50%;
+    border-color: rgba(255,45,120,0.15);
+    animation-delay: -5s;
+  }
+  .float-shape:nth-child(3) {
+    width: 35px; height: 35px;
+    top: 30%; right: 20%;
+    transform: rotate(30deg);
+    border-color: rgba(180,74,255,0.15);
+    animation-delay: -10s;
+  }
+  .float-shape:nth-child(4) {
+    width: 100px; height: 100px;
+    bottom: 15%; left: 15%;
+    border-radius: 20px;
+    transform: rotate(-20deg);
+    animation-delay: -3s;
+    border-color: rgba(0,240,255,0.08);
+  }
+  .float-shape:nth-child(5) {
+    width: 25px; height: 25px;
+    top: 45%; left: 5%;
+    border-radius: 50%;
+    border-color: rgba(255,45,120,0.1);
+    animation-delay: -8s;
+  }
+  @keyframes floatShape {
+    0%,100% { transform: translateY(0) rotate(var(--r, 45deg)); opacity: 0.3; }
+    50% { transform: translateY(-40px) rotate(var(--r, 45deg)); opacity: 0.7; }
+  }
+
+  /* ========== 数据统计条 ========== */
+  .stats-bar {
+    padding: 60px 50px;
+    display: flex;
+    justify-content: center;
+    gap: 80px;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 5;
+  }
+  .stat-item {
+    text-align: center;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s;
+  }
+  .stat-item.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .stat-number {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 3rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-label {
+    font-size: 0.9rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #556677;
+    margin-top: 8px;
+  }
+
+  /* ========== 分隔线 ========== */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,240,255,0.3), rgba(180,74,255,0.3), transparent);
+    margin: 0 10%;
+    position: relative;
+  }
+  .section-divider::before {
+    content: '◆';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    color: var(--neon-cyan);
+    font-size: 12px;
+    background: var(--dark-bg);
+    padding: 0 15px;
+  }
+
+  /* ========== Section 标题 ========== */
+  .section-header {
+    text-align: center;
+    padding: 80px 20px 50px;
+    position: relative;
+    z-index: 5;
+  }
+  .section-tag {
+    font-family: 'Fira Code', monospace;
+    color: var(--neon-pink);
+    font-size: 0.85rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+    display: block;
+  }
+  .section-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.8rem;
+    font-weight: 900;
+    letter-spacing: 3px;
+  }
+  .section-subtitle {
+    color: #556688;
+    font-size: 1.1rem;
+    margin-top: 15px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.7;
+  }
+
+  /* ========== 技能 / 特色卡片 ========== */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 30px;
+    padding: 20px 80px 80px;
+    position: relative;
+    z-index: 5;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .feature-card {
+    background: var(--card-bg);
+    border: 1px solid rgba(0,240,255,0.08);
+    border-radius: 20px;
+    padding: 45px 35px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  .feature-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, rgba(0,240,255,0.05), transparent);
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  .feature-card:hover::before { opacity: 1; }
+  .feature-card:hover {
+    transform: translateY(-10px) !important;
+    border-color: rgba(0,240,255,0.3);
+    box-shadow:
+      0 20px 60px rgba(0,0,0,0.4),
+      0 0 40px rgba(0,240,255,0.1),
+      inset 0 1px 0 rgba(0,240,255,0.1);
+  }
+
+  /* 卡片角标 */
+  .card-corner {
+    position: absolute;
+    width: 30px; height: 30px;
+    border-color: var(--neon-cyan);
+    border-style: solid;
+    opacity: 0.3;
+    transition: all 0.3s;
+  }
+  .feature-card:hover .card-corner { opacity: 1; }
+  .corner-tl { top: 12px; left: 12px; border-width: 2px 0 0 2px; border-radius: 4px 0 0 0; }
+  .corner-br { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; border-radius: 0 0 4px 0; }
+
+  .feature-icon {
+    width: 70px; height: 70px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: 25px;
+    position: relative;
+    background: rgba(0,240,255,0.08);
+    border: 1px solid rgba(0,240,255,0.15);
+  }
+  .feature-icon::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(0,240,255,0.2), transparent);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .feature-card:hover .feature-icon::after { opacity: 1; }
+
+  .feature-card h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.25rem;
+    margin-bottom: 15px;
+    color: #e8f0ff;
+    letter-spacing: 1px;
+  }
+  .feature-card p {
+    color: #667799;
+    line-height: 1.8;
+    font-size: 0.95rem;
+  }
+
+  .feature-tags {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .feature-tags span {
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    background: rgba(0,240,255,0.08);
+    color: var(--neon-cyan);
+    border: 1px solid rgba(0,240,255,0.12);
+  }
+
+  /* ========== 博客文章区 ========== */
+  .blog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 35px;
+    padding: 20px 80px 80px;
+    max-width: 1400px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 5;
+  }
+
+  .blog-card {
+    background: var(--card-bg);
+    border: 1px solid rgba(0,240,255,0.06);
+    border-radius: 22px;
+    overflow: hidden;
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    opacity: 0;
+    transform: translateY(50px) scale(0.95);
+  }
+  .blog-card.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  .blog-card:hover {
+    transform: translateY(-12px) scale(1.02);
+    border-color: rgba(0,240,255,0.25);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.5), 0 0 50px rgba(0,240,255,0.08);
+  }
+
+  .blog-card-img {
+    height: 220px;
+    position: relative;
+    overflow: hidden;
+  }
+  .blog-card-img .img-bg {
+    width: 100%; height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    transition: transform 0.6s;
+  }
+  .blog-card:hover .img-bg { transform: scale(1.1); }
+  .img-bg-1 {
+    background: linear-gradient(135deg, #0a1628, #1a2a4a, #0d1f3c);
+  }
+  .img-bg-2 {
+    background: linear-gradient(135deg, #1a0a28, #2a1a4a, #1f0d3c);
+  }
+  .img-bg-3 {
+    background: linear-gradient(135deg, #0a2818, #1a4a2a, #0d3c1f);
+  }
+  .img-bg-4 {
+    background: linear-gradient(135deg, #280a0a, #4a1a1a, #3c0d0d);
+  }
+  .img-bg-5 {
+    background: linear-gradient(135deg, #0a2028, #1a3a4a, #0d2f3c);
+  }
+  .img-bg-6 {
+    background: linear-gradient(135deg, #28200a, #4a3a1a, #3c2f0d);
+  }
+
+  /* 图片上的波浪动画 */
+  .blog-card-img::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; height: 50%;
+    background: linear-gradient(to top, var(--card-bg), transparent);
+  }
+
+  .blog-date {
+    position: absolute;
+    top: 18px; left: 18px;
+    padding: 6px 16px;
+    background: rgba(10,10,26,0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0,240,255,0.15);
+    border-radius: 25px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.75rem;
+    color: var(--neon-cyan);
+    z-index: 2;
+  }
+
+  .blog-category {
+    position: absolute;
+    top: 18px; right: 18px;
+    padding: 6px 16px;
+    border-radius: 25px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    z-index: 2;
+  }
+  .cat-tech { background: rgba(0,240,255,0.15); color: var(--neon-cyan); border: 1px solid rgba(0,240,255,0.3); }
+  .cat-ai { background: rgba(180,74,255,0.15); color: var(--neon-purple); border: 1px solid rgba(180,74,255,0.3); }
+  .cat-life { background: rgba(255,45,120,0.15); color: var(--neon-pink); border: 1px solid rgba(255,45,120,0.3); }
+  .cat-design { background: rgba(74,158,255,0.15); color: var(--neon-blue); border: 1px solid rgba(74,158,255,0.3); }
+
+  .blog-card-body {
+    padding: 30px 28px 28px;
+    position: relative;
+    z-index: 2;
+  }
+  .blog-card-body h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.15rem;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    color: #e0e8f5;
+    transition: color 0.3s;
+  }
+  .blog-card:hover .blog-card-body h3 {
+    color: var(--neon-cyan);
+    text-shadow: 0 0 20px rgba(0,240,255,0.3);
+  }
+  .blog-card-body p {
+    color: #5a6a80;
+    line-height: 1.7;
+    font-size: 0.92rem;
+    margin-bottom: 20px;
+  }
+
+  .blog-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .blog-author {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .author-avatar {
+    width: 35px; height: 35px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    color: white;
+  }
+  .author-name {
+    font-size: 0.85rem;
+    color: #778899;
+  }
+  .read-more {
+    color: var(--neon-cyan);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s;
+  }
+  .read-more:hover {
+    gap: 12px;
+    text-shadow: 0 0 15px rgba(0,240,255,0.5);
+  }
+
+  /* ========== 关于我区域 ========== */
+  .about-section {
+    padding: 80px 80px;
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+    position: relative;
+    z-index: 5;
+  }
+
+  .about-visual {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 450px;
+  }
+
+  .about-avatar {
+    width: 300px; height: 300px;
+    border-radius: 30px;
+    background: linear-gradient(135deg, rgba(0,240,255,0.1), rgba(180,74,255,0.1));
+    border: 2px solid rgba(0,240,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 6rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .about-avatar::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 32px;
+    background: conic-gradient(from 0deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink), var(--neon-cyan));
+    z-index: -1;
+    animation: rotateBorder 4s linear infinite;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .about-avatar:hover::before { opacity: 1; }
+  @keyframes rotateBorder {
+    100% { transform: rotate(360deg); }
+  }
+
+  .about-ring {
+    position: absolute;
+    border: 1px solid rgba(0,240,255,0.1);
+    border-radius: 50%;
+    animation: ringPulse 4s ease-in-out infinite;
+  }
+  .ring-1 { width: 350px; height: 350px; animation-delay: 0s; }
+  .ring-2 { width: 420px; height: 420px; animation-delay: -1s; opacity: 0.5; }
+  .ring-3 { width: 490px; height: 490px; animation-delay: -2s; opacity: 0.25; }
+  @keyframes ringPulse {
+    0%,100% { transform: scale(1); opacity: 0.3; }
+    50% { transform: scale(1.05); opacity: 0.6; }
+  }
+
+  /* 旋转的粒子环 */
+  .orbit-dot {
+    position: absolute;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--neon-cyan);
+    box-shadow: 0 0 15px var(--neon-cyan);
+  }
+  .orbit-dot:nth-child(1) {
+    animation: orbit 8s linear infinite;
+  }
+  .orbit-dot:nth-child(2) {
+    animation: orbit 12s linear infinite reverse;
+    background: var(--neon-pink);
+    box-shadow: 0 0 15px var(--neon-pink);
+  }
+  .orbit-dot:nth-child(3) {
+    animation: orbit 15s linear infinite;
+    background: var(--neon-purple);
+    box-shadow: 0 0 15px var(--neon-purple);
+    width: 7px; height: 7px;
+  }
+  @keyframes orbit {
+    0% { transform: rotate(0deg) translateX(215px) rotate(0deg); }
+    100% { transform: rotate(360deg) translateX(215px) rotate(-360deg); }
+  }
+
+  .about-text h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.4rem;
+    margin-bottom: 25px;
+    line-height: 1.3;
+  }
+  .about-text p {
+    color: #778899;
+    line-height: 2;
+    font-size: 1.05rem;
+    margin-bottom: 20px;
+  }
+
+  .about-stats {
+    display: flex;
+    gap: 40px;
+    margin: 35px 0;
+    flex-wrap: wrap;
+  }
+  .about-stat {
+    text-align: center;
+  }
+  .about-stat .num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--neon-cyan);
+  }
+  .about-stat .label {
+    font-size: 0.82rem;
+    color: #556677;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 5px;
+  }
+
+  /* 技能进度条 */
+  .skills-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .skill-item {
+    opacity: 0;
+    transform: translateX(-30px);
+    transition: all 0.5s;
+  }
+  .skill-item.visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  .skill-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .skill-name {
+    font-size: 0.9rem;
+    color: #aabbcc;
+    font-weight: 600;
+  }
+  .skill-percent {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85rem;
+    color: var(--neon-cyan);
+  }
+  .skill-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .skill-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+    width: 0;
+    transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+  }
+  .skill-fill::after {
+    content: '';
+    position: absolute;
+    right: 0; top: -3px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--neon-cyan);
+    box-shadow: 0 0 15px var(--neon-cyan);
+  }
+
+  /* ========== 时间线 ========== */
+  .timeline-section {
+    padding: 80px 80px;
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 5;
+  }
+  .timeline {
+    position: relative;
+    padding: 20px 0;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent, rgba(0,240,255,0.3), rgba(180,74,255,0.3), transparent);
+    transform: translateX(-50%);
+  }
+
+  .timeline-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 50px;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s;
+  }
+  .timeline-item.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .timeline-item:nth-child(odd) {
+    flex-direction: row;
+    text-align: right;
+    padding-right: calc(50% + 35px);
+  }
+  .timeline-item:nth-child(even) {
+    flex-direction: row-reverse;
+    text-align: left;
+    padding-left: calc(50% + 35px);
+  }
+
+  .timeline-dot {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--dark-bg);
+    border: 3px solid var(--neon-cyan);
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    box-shadow: 0 0 20px rgba(0,240,255,0.3);
+    animation: dotPulse 3s ease-in-out infinite;
+  }
+  @keyframes dotPulse {
+    0%,100% { box-shadow: 0 0 20px rgba(0,240,255,0.3); }
+    50% { box-shadow: 0 0 40px rgba(0,240,255,0.6); }
+  }
+
+  .timeline-content {
+    background: var(--card-bg);
+    border: 1px solid rgba(0,240,255,0.08);
+    border-radius: 16px;
+    padding: 25px 30px;
+    max-width: 380px;
+    transition: all 0.3s;
+  }
+  .timeline-content:hover {
+    border-color: rgba(0,240,255,0.25);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    transform: translateY(-3px);
+  }
+  .timeline-year {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    color: var(--neon-pink);
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+  }
+  .timeline-content h4 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.05rem;
+    margin-bottom: 10px;
+    color: #d0e0f0;
+  }
+  .timeline-content p {
+    color: #667788;
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  /* ========== 代码雨效果 ========== */
+  .code-rain-container {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0.06;
+    z-index: 1;
+  }
+  .code-char {
+    position: absolute;
+    font-family: 'Fira Code', monospace;
+    font-size: 1rem;
+    color: var(--neon-cyan);
+    animation: codeFall linear infinite;
+    white-space: nowrap;
+  }
+  @keyframes codeFall {
+    0% { transform: translateY(-100vh); opacity: 1; }
+    100% { transform: translateY(100vh); opacity: 0; }
+  }
+
+  /* ========== 社交链接 ========== */
+  .social-links {
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    margin-top: 40px;
+  }
+  .social-link {
+    width: 55px; height: 55px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(0,240,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #778899;
+    font-size: 1.3rem;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .social-link:hover {
+    transform: translateY(-5px) scale(1.1);
+    border-color: var(--neon-cyan);
+    color: var(--neon-cyan);
+    box-shadow: 0 10px 30px rgba(0,240,255,0.15);
+    background: rgba(0,240,255,0.08);
+  }
+
+  /* ========== 联系区域 ========== */
+  .contact-section {
+    padding: 80px 80px 100px;
+    max-width: 800px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 5;
+    text-align: center;
+  }
+  .contact-form {
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    text-align: left;
+  }
+  .form-group {
+    position: relative;
+  }
+  .form-group input,
+  .form-group textarea {
+    width: 100%;
+    padding: 18px 22px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(0,240,255,0.1);
+    border-radius: 14px;
+    color: #c8d6e5;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    transition: all 0.3s;
+    outline: none;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 30px rgba(0,240,255,0.1);
+    background: rgba(0,240,255,0.03);
+  }
+  .form-group textarea {
+    height: 150px;
+    resize: vertical;
+  }
+  .form-group label {
+    position: absolute;
+    top: -10px; left: 18px;
+    padding: 0 8px;
+    background: var(--dark-bg);
+    font-size: 0.82rem;
+    color: var(--neon-cyan);
+    letter-spacing: 1px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .form-group input:focus + label,
+  .form-group textarea:focus + label {
+    opacity: 1;
+  }
+
+  /* ========== 页脚 ========== */
+  footer {
+    text-align: center;
+    padding: 50px;
+    position: relative;
+    z-index: 5;
+    border-top: 1px solid rgba(0,240,255,0.08);
+  }
+  .footer-text {
+    color: #445566;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+  }
+  .footer-text span {
+    color: var(--neon-cyan);
+    animation: gradientShift 3s ease infinite;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+  }
+
+  /* ========== 滚动进度条 ========== */
+  .scroll-progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));
+    z-index: 10002;
+    transition: width 0.1s;
+    box-shadow: 0 0 15px rgba(0,240,255,0.5);
+  }
+
+  /* ========== 返回顶部 ========== */
+  .back-to-top {
+    position: fixed;
+    bottom: 35px; right: 35px;
+    width: 55px; height: 55px;
+    border-radius: 16px;
+    background: rgba(0,240,255,0.1);
+    border: 1px solid rgba(0,240,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--neon-cyan);
+    font-size: 1.3rem;
+    cursor: none;
+    z-index: 999;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s;
+    text-decoration: none;
+  }
+  .back-to-top.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .back-to-top:hover {
+    background: rgba(0,240,255,0.2);
+    box-shadow: 0 0 30px rgba(0,240,255,0.3);
+    transform: translateY(-3px);
+  }
+
+  /* ========== 加载动画 ========== */
+  .loader-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: var(--dark-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    transition: opacity 0.8s, visibility 0.8s;
+  }
+  .loader-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .loader-ring {
+    width: 80px; height: 80px;
+    border: 3px solid transparent;
+    border-top-color: var(--neon-cyan);
+    border-right-color: var(--neon-purple);
+    border-radius: 50%;
+    animation: loaderSpin 1s linear infinite;
+  }
+  @keyframes loaderSpin {
+    100% { transform: rotate(360deg); }
+  }
+  .loader-text {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--neon-cyan);
+    margin-top: 25px;
+    letter-spacing: 5px;
+    font-size: 0.9rem;
+    animation: loaderText 1.5s ease-in-out infinite;
+  }
+  @keyframes loaderText {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ========== 通用入场动画 ========== */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ========== 霓虹文字闪烁 ========== */
+  .neon-flicker {
+    animation: neonFlicker 5s ease-in-out infinite;
+  }
+  @keyframes neonFlicker {
+    0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% {
+      opacity: 1;
+      text-shadow:
+        0 0 5px rgba(0,240,255,0.7),
+        0 0 15px rgba(0,240,255,0.4),
+        0 0 30px rgba(0,240,255,0.2);
+    }
+    20%, 21.999%, 63%, 63.999%, 65%, 69.999% {
+      opacity: 0.7;
+      text-shadow: none;
+    }
+  }
+
+  /* ========== 响应式 ========== */
+  @media (max-width: 1024px) {
+    .hero h1 { font-size: 3.2rem; }
+    .about-section { grid-template-columns: 1fr; padding: 60px 30px; }
+    .features-grid, .blog-grid { padding: 20px 30px 60px; }
+  }
+  @media (max-width: 768px) {
+    nav { padding: 15px 25px; }
+    .nav-links { display: none; }
+    .hamburger { display: flex; }
+    .hero { padding: 120px 25px 60px; }
+    .hero h1 { font-size: 2.3rem; }
+    .hero-desc { font-size: 1rem; }
+    .section-title { font-size: 2rem; }
+    .stats-bar { gap: 30px; padding: 40px 20px; }
+    .stat-number { font-size: 2.2rem; }
+    .features-grid, .blog-grid { grid-template-columns: 1fr; padding: 20px 20px 50px; }
+    .timeline-item:nth-child(odd) { padding-right: 45px; text-align: left; flex-direction: row-reverse; }
+    .timeline-item:nth-child(even) { padding-left: 45px; }
+    .timeline::before { left: 20px; }
+    .timeline-dot { left: 20px; }
+    .about-avatar { width: 220px; height: 220px; }
+    .ring-1 { width: 260px; height: 260px; }
+    .ring-2 { width: 310px; height: 310px; }
+    .ring-3 { width: 360px; height: 360px; }
+    .contact-section { padding: 60px 20px 80px; }
+    .cursor, .cursor-dot { display: none; }
+    body { cursor: auto; }
+    .btn { cursor: pointer; }
+    .back-to-top { cursor: pointer; }
+  }
+
+  /* ========== 深色选中样式 ========== */
+  ::selection {
+    background: rgba(0,240,255,0.25);
+    color: var(--neon-cyan);
+  }
+
+  /* 滚动条 */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--dark-bg); }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, var(--neon-cyan), var(--neon-purple));
+    border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- 加载动画 -->
+<div class="loader-overlay" id="loader">
+  <div class="loader-ring"></div>
+  <div class="loader-text">INITIALIZING...</div>
+</div>
+
+<!-- 滚动进度条 -->
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<!-- 自定义光标 -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<!-- 星空背景 -->
+<canvas id="particle-canvas"></canvas>
+
+<!-- 扫描线 -->
+<div class="scanlines"></div>
+
+<!-- 背景光晕 -->
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+<div class="bg-glow bg-glow-3"></div>
+
+<!-- 代码雨 -->
+<div class="code-rain-container" id="codeRain"></div>
+
+<!-- 导航栏 -->
+<nav id="navbar">
+  <div class="logo">NEXUS</div>
+  <ul class="nav-links">
+    <li><a href="#home" class="hover-effect">首页</a></li>
+    <li><a href="#features" class="hover-effect">技术栈</a></li>
+    <li><a href="#blog" class="hover-effect">博客</a></li>
+    <li><a href="#about" class="hover-effect">关于</a></li>
+    <li><a href="#timeline" class="hover-effect">历程</a></li>
+    <li><a href="#contact" class="nav-cta hover-effect">联系我</a></li>
+  </ul>
+  <div class="hamburger" id="hamburger">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- Hero 区域 -->
+<section class="hero" id="home">
+  <div class="hex-grid"></div>
+  <div class="floating-elements">
+    <div class="float-shape" style="--r: 45deg;"></div>
+    <div class="float-shape" style="--r: 0deg;"></div>
+    <div class="float-shape" style="--r: 30deg;"></div>
+    <div class="float-shape" style="--r: -20deg;"></div>
+    <div class="float-shape" style="--r: 0deg;"></div>
+  </div>
+
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      <span>SYSTEM ONLINE — 欢迎来到我的赛博空间</span>
+    </div>
+
+    <h1>
+      <span class="gradient-text">创造无限可能</span><br>
+      <span class="neon-flicker" style="color: var(--neon-cyan); -webkit-text-fill-color: var(--neon-cyan);">探索数字前沿</span>
+    </h1>
+
+    <div class="typewriter">
+      <span class="typing" id="typewriter"></span>
+    </div>
+
+    <p class="hero-desc">
+      在这里，代码与创意交织，技术与艺术碰撞。<br>
+      记录每一次灵感的迸发，分享每一个技术的突破。
+    </p>
+
+    <div class="hero-buttons">
+      <a href="#blog" class="btn btn-primary hover-effect">🚀 探索博客</a>
+      <a href="#about" class="btn btn-outline hover-effect">👤 关于我</a>
+    </div>
+  </div>
+</section>
+
+<!-- 数据统计 -->
+<div class="stats-bar" id="stats">
+  <div class="stat-item">
+    <div class="stat-number" data-target="128">0</div>
+    <div class="stat-label">技术文章</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-number" data-target="52000">0</div>
+    <div class="stat-label">阅读量</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-number" data-target="36">0</div>
+    <div class="stat-label">开源项目</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-number" data-target="1800">0</div>
+    <div class="stat-label">GitHub Stars</div>
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- 技术栈 / 特色 -->
+<section id="features">
+  <div class="section-header">
+    <span class="section-tag">&lt; TECH_STACK /&gt;</span>
+    <h2 class="section-title gradient-text">技术矩阵</h2>
+    <p class="section-subtitle">在数字世界中构建、创新、突破边界</p>
+  </div>
+
+  <div class="features-grid">
+    <div class="feature-card" data-delay="0">
+      <div class="card-corner corner-tl"></div>
+      <div class="card-corner corner-br"></div>
+      <div class="feature-icon">⚡</div>
+      <h3>前端架构</h3>
+      <p>精通 React / Vue / Next.js 生态系统，构建高性能、高可用的现代化 Web 应用，追求极致的用户体验。</p>
+      <div class="feature-tags">
+        <span>React</span><span>Vue3</span><span>TypeScript</span><span>Next.js</span>
+      </div>
+    </div>
+
+    <div class="feature-card" data-delay="100">
+      <div class="card-corner corner-tl"></div>
+      <div class="card-corner corner-br"></div>
+      <div class="feature-icon">🧠</div>
+      <h3>人工智能</h3>
+      <p>深入探索 LLM、计算机视觉与机器学习领域，将 AI 能力融入产品，驱动智能化体验升级。</p>
+      <div class="feature-tags">
+        <span>PyTorch</span><span>LLM</span><span>Transformer</span><span>CV</span>
+      </div>
+    </div>
+
+    <div class="feature-card" data-delay="200">
+      <div class="card-corner corner-tl"></div>
+      <div class="card-corner corner-br"></div>
+      <div class="feature-icon">🌐</div>
+      <h3>云原生</h3>
+      <p>掌握微服务架构与云原生技术栈，设计高弹性、可扩展的分布式系统，支撑大规模业务场景。</p>
+      <div class="feature-tags">
+        <span>Kubernetes</span><span>Docker</span><span>Serverless</span><span>CI/CD</span>
+      </div>
+    </div>
+
+    <div class="feature-card" data-delay="300">
+      <div class="card-corner corner-tl"></div>
+      <div class="card-corner corner-br"></div>
+      <div class="feature-icon">🎨</div>
+      <h3>UI/UX 设计</h3>
+      <p>热衷于创造令人惊艳的交互体验，融合动效设计与视觉美学，让每一个像素都传递价值。</p>
+      <div class="feature-tags">
+        <span>Figma</span><span>Motion</span><span>3D</span><span>Design System</span>
+      </div>
+    </div>
+
+    <div class="feature-card" data-delay="400">
+      <div class="card-corner corner-tl"></div>
+      <div class="card-corner corner-br"></div>
+      <div class="feature-icon">🔒</div>
+      <h3>网络安全</h3>
+      <p>关注安全攻防技术，构建安全可靠的应用系统，保护数据隐私，打造零信任安全架构。</p>
+      <div class="feature-tags">
+        <span>PenTest</span><span>OAuth</span><span>ZeroTrust</span><span>Encryption</span>
+      </div>
+    </div>
+
+    <div class="feature-card" data-delay="500">
+      <div class="card-corner corner-tl"></div>
+      <div class="card-corner corner-br"></div>
+      <div class="feature-icon">📱</div>
+      <h3>跨端开发</h3>
+      <p>一套代码覆盖全平台，运用 React Native / Flutter / Electron 打造无缝衔接的跨端应用。</p>
+      <div class="feature-tags">
+        <span>React Native</span><span>Flutter</span><span>Electron</span><span>PWA</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- 博客文章 -->
+<section id="blog">
+  <div class="section-header">
+    <span class="section-tag">// LATEST_POSTS</span>
+    <h2 class="section-title gradient-text">最新文章</h2>
+    <p class="section-subtitle">记录灵感与思考，分享技术的深度与广度</p>
+  </div>
+
+  <div class="blog-grid">
+    <div class="blog-card" data-delay="0">
+      <div class="blog-card-img">
+        <div class="img-bg img-bg-1">🚀</div>
+        <div class="blog-date">2025.01.15</div>
+        <div class="blog-category cat-tech">技术</div>
+      </div>
+      <div class="blog-card-body">
+        <h3>2025年前端开发趋势：从 WebGPU 到 AI 原生应用</h3>
+        <p>探索即将到来的前端技术革命，WebGPU 如何重塑浏览器的图形能力，以及 AI 将如何重新定义开发者的角色。</p>
+        <div class="blog-card-footer">
+          <div class="blog-author">
+            <div class="author-avatar">N</div>
+            <span class="author-name">NEXUS</span>
+          </div>
+          <a href="#" class="read-more hover-effect">阅读全文 →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="blog-card" data-delay="100">
+      <div class="blog-card-img">
+        <div class="img-bg img-bg-2">🧠</div>
+        <div class="blog-date">2025.01.08</div>
+        <div class="blog-category cat-ai">AI</div>
+      </div>
+      <div class="blog-card-body">
+        <h3>深入理解 Transformer：从注意力机制到大语言模型</h3>
+        <p>从零开始理解 Transformer 架构的核心原理，Attention 机制的数学之美，以及它如何驱动了当今的 AI 革命。</p>
+        <div class="blog-card-footer">
+          <div class="blog-author">
+            <div class="author-avatar">N</div>
+            <span class="author-name">NEXUS</span>
+          </div>
+          <a href="#" class="read-more hover-effect">阅读全文 →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="blog-card" data-delay="200">
+      <div class="blog-card-img">
+        <div class="img-bg img-bg-3">☁️</div>
+        <div class="blog-date">2024.12.28</div>
+        <div class="blog-category cat-tech">技术</div>
+      </div>
+      <div class="blog-card-body">
+        <h3>Serverless 架构实战：从零构建高弹性微服务系统</h3>
+        <p>深入探讨 Serverless 在实际项目中的应用，如何利用云函数构建弹性伸缩的后端服务，降低运维成本。</p>
+        <div class="blog-card-footer">
+          <div class="blog-author">
+            <div class="author-avatar">N</div>
+            <span class="author-name">NEXUS</span>
+          </div>
+          <a href="#" class="read-more hover-effect">阅读全文 →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="blog-card" data-delay="300">
+      <div class="blog-card-img">
+        <div class="img-bg img-bg-4">🎨</div>
+        <div class="blog-date">2024.12.20</div>
+        <div class="blog-category cat-design">设计</div>
+      </div>
+      <div class="blog-card-body">
+        <h3>动效设计的艺术：用 CSS Animation 创造沉浸式体验</h3>
+        <p>探索 CSS 动画的无限可能，从微交接到复杂编排，如何用纯 CSS 创造出令人惊叹的视觉效果。</p>
+        <div class="blog-card-footer">
+          <div class="blog-author">
+            <div class="author-avatar">N</div>
+            <span class="author-name">NEXUS</span>
+          </div>
+          <a href="#" class="read-more hover-effect">阅读全文 →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="blog-card" data-delay="400">
+      <div class="blog-card-img">
+        <div class="img-bg img-bg-5">🔐</div>
+        <div class="blog-date">2024.12.10</div>
+        <div class="blog-category cat-tech">技术</div>
+      </div>
+      <div class="blog-card-body">
+        <h3>零信任安全架构：构建下一代网络安全防线</h3>
+        <p>深入理解零信任安全模型的核心理念，以及如何在实际系统中实施最小权限原则和持续验证策略。</p>
+        <div class="blog-card-footer">
+          <div class="blog-author">
+            <div class="author-avatar">N</div>
+            <span class="author-name">NEXUS</span>
+          </div>
+          <a href="#" class="read-more hover-effect">阅读全文 →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="blog-card" data-delay="500">
+      <div class="blog-card-img">
+        <div class="img-bg img-bg-6">💡</div>
+        <div class="blog-date">2024.11.25</div>
+        <div class="blog-category cat-life">随笔</div>
+      </div>
+      <div class="blog-card-body">
+        <h3>程序员的自我修养：在技术浪潮中保持清醒与热爱</h3>
+        <p>分享对技术成长、职业规划和个人发展的思考，如何在快速变化的技术世界中找到自己的节奏。</p>
+        <div class="blog-card-footer">
+          <div class="blog-author">
+            <div class="author-avatar">N</div>
+            <span class="author-name">NEXUS</span>
+          </div>
+          <a href="#" class="read-more hover-effect">阅读全文 →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- 关于我 -->
+<section id="about">
+  <div class="section-header">
+    <span class="section-tag">// ABOUT_ME</span>
+    <h2 class="section-title gradient-text">关于我</h2>
+    <p class="section-subtitle">一个对技术充满热情的创造者</p>
+  </div>
+
+  <div class="about-section">
+    <div class="about-visual">
+      <div class="about-ring ring-3"></div>
+      <div class="about-ring ring-2"></div>
+      <div class="about-ring ring-1"></div>
+      <div class="orbit-dot"></div>
+      <div class="orbit-dot"></div>
+      <div class="orbit-dot"></div>
+      <div class="about-avatar">👨‍💻</div>
+    </div>
+
+    <div class="about-text">
+      <h2>嗨，我是 <span class="gradient-text">NEXUS</span> 👋</h2>
+      <p>
+        一名热爱技术的全栈开发者，专注于构建优雅、高效、用户友好的数字产品。
+        我相信技术是改变世界的力量，而代码是表达创意的艺术。
+      </p>
+      <p>
+        在过去的几年里，我参与了多个大型项目，从电商平台到 AI 应用，
+        从移动端到云原生架构，不断挑战自我，追求卓越。
+      </p>
+
+      <div class="about-stats">
+        <div class="about-stat">
+          <div class="num">5+</div>
+          <div class="label">年开发经验</div>
+        </div>
+        <div class="about-stat">
+          <div class="num">20+</div>
+          <div class="label">完成项目</div>
+        </div>
+        <div class="about-stat">
+          <div class="num">10+</div>
+          <div class="label">技术博客</div>
+        </div>
+      </div>
+
+      <div class="skills-list">
+        <div class="skill-item" data-width="95">
+          <div class="skill-header">
+            <span class="skill-name">JavaScript / TypeScript</span>
+            <span class="skill-percent">95%</span>
+          </div>
+          <div class="skill-bar"><div class="skill-fill"></div></div>
+        </div>
+        <div class="skill-item" data-width="88">
+          <div class="skill-header">
+            <span class="skill-name">React / Vue / Next.js</span>
+            <span class="skill-percent">88%</span>
+          </div>
+          <div class="skill-bar"><div class="skill-fill"></div></div>
+        </div>
+        <div class="skill-item" data-width="82">
+          <div class="skill-header">
+            <span class="skill-name">Python / AI & ML</span>
+            <span class="skill-percent">82%</span>
+          </div>
+          <div class="skill-bar"><div class="skill-fill"></div></div>
+        </div>
+        <div class="skill-item" data-width="78">
+          <div class="skill-header">
+            <span class="skill-name">Node.js / 后端架构</span>
+            <span class="skill-percent">78%</span>
+          </div>
+          <div class="skill-bar"><div class="skill-fill"></div></div>
+        </div>
+        <div class="skill-item" data-width="90">
+          <div class="skill-header">
+            <span class="skill-name">UI/UX 动效设计</span>
+            <span class="skill-percent">90%</span>
+          </div>
+          <div class="skill-bar"><div class="skill-fill"></div></div>
+        </div>
+      </div>
+
+      <div class="social-links">
+        <a href="#" class="social-link hover-effect" title="GitHub">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        </a>
+        <a href="#" class="social-link hover-effect" title="Twitter/X">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+        <a href="#" class="social-link hover-effect" title="掘金">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 1.97a.5.5 0 01-.707 0L12 6.896 8.783 10.113a.5.5 0 01-.707 0L6.106 8.143a.5.5 0 010-.707L12 1.527l5.894 5.887a.5.5 0 010 .807z"/></svg>
+        </a>
+        <a href="#" class="social-link hover-effect" title="Email">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 8l10 6 10-6"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- 时间线 -->
+<section id="timeline">
+  <div class="section-header">
+    <span class="section-tag">// TIMELINE</span>
+    <h2 class="section-title gradient-text">成长历程</h2>
+    <p class="section-subtitle">每一步都在向更好的自己迈进</p>
+  </div>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-content">
+        <div class="timeline-year">2024 — 至今</div>
+        <h4>AI 全栈工程师</h4>
+        <p>加入前沿科技团队，专注于 AI 应用的全栈开发，负责从模型到产品的端到端交付，推动智能化产品落地。</p>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-content">
+        <div class="timeline-year">2022 — 2024</div>
+        <h4>高级前端工程师</h4>
+        <p>主导多个大型 Web 应用的架构设计与开发，建立组件库和设计系统，提升团队开发效率 40%。</p>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-content">
+        <div class="timeline-year">2020 — 2022</div>
+        <h4>全栈开发者</h4>
+        <p>从零到一构建多个完整项目，涵盖电商、社交、教育等多个领域，积累了丰富的实战经验。</p>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-content">
+        <div class="timeline-year">2019</div>
+        <h4>开启代码之旅</h4>
+        <p>第一次写下 Hello World，从此爱上了用代码构建世界的感觉。在开源社区中不断学习与成长。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- 联系我 -->
+<section class="contact-section" id="contact">
+  <div class="section-header" style="padding-top:0">
+    <span class="section-tag">// GET_IN_TOUCH</span>
+    <h2 class="section-title gradient-text">联系我</h2>
+    <p class="section-subtitle">让我们一起创造下一个精彩的项目</p>
+  </div>
+
+  <div class="contact-form">
+    <div class="form-group">
+      <input type="text" id="name" placeholder="你的名字" required>
+      <label for="name">NAME</label>
+    </div>
+    <div class="form-group">
+      <input type="email" id="email" placeholder="你的邮箱" required>
+      <label for="email">EMAIL</label>
+    </div>
+    <div class="form-group">
+      <textarea id="message" placeholder="写下你的想法..." required></textarea>
+      <label for="message">MESSAGE</label>
+    </div>
+    <button class="btn btn-primary hover-effect" style="width:100%; font-size:1.05rem; padding:18px;" onclick="sendMessage()">
+      🚀 发送消息
+    </button>
+  </div>
+</section>
+
+<!-- 页脚 -->
+<footer>
+  <div class="footer-text">
+    © 2025 <span>NEXUS BLOG</span> — Powered by Passion & Code
+  </div>
+  <div class="footer-text" style="margin-top:10px; font-size:0.75rem; color:#334455;">
+    Designed with 💜 in Cyberspace | Built with HTML/CSS/JS
+  </div>
+</footer>
+
+<!-- 返回顶部 -->
+<a href="#home" class="back-to-top hover-effect" id="backToTop">↑</a>
+
+<script>
+// ========== 加载动画 ==========
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('loader').classList.add('hidden');
+  }, 1500);
+});
+
+// ========== 自定义光标 ==========
+const cursor = document.getElementById('cursor');
+const cursorDot = document.getElementById('cursorDot');
+let mouseX = 0, mouseY = 0;
+let cursorX = 0, cursorY = 0;
+
+document.addEventListener('mousemove', e => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+  cursorDot.style.left = mouseX + 'px';
+  cursorDot.style.top = mouseY + 'px';
+});
+
+function animateCursor() {
+  cursorX += (mouseX - cursorX) * 0.15;
+  cursorY += (mouseY - cursorY) * 0.15;
+  cursor.style.left = cursorX + 'px';
+  cursor.style.top = cursorY + 'px';
+  requestAnimationFrame(animateCursor);
+}
+animateCursor();
+
+// 光标悬停效果
+document.querySelectorAll('a, button, .btn, .feature-card, .blog-card, .social-link').forEach(el => {
+  el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+  el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+});
+
+// ========== 星空粒子 ==========
+const canvas = document.getElementById('particle-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+class Particle {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.size = Math.random() * 2 + 0.5;
+    this.speedX = (Math.random() - 0.5) * 0.5;
+    this.speedY = (Math.random() - 0.5) * 0.5;
+    this.opacity = Math.random() * 0.6 + 0.2;
+    this.twinkleSpeed = Math.random() * 0.02 + 0.005;
+    this.twinkleOffset = Math.random() * Math.PI * 2;
+  }
+  update() {
+    this.x += this.speedX;
+    this.y += this.speedY;
+    if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+      this.reset();
+    }
+    this.opacity = 0.2 + Math.abs(Math.sin(Date.now() * this.twinkleSpeed + this.twinkleOffset)) * 0.6;
+  }
+  draw() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0, 240, 255, ${this.opacity})`;
+    ctx.fill();
+
+    // 发光效果
+    if (this.size > 1.2) {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0, 240, 255, ${this.opacity * 0.1})`;
+      ctx.fill();
+    }
+  }
+}
+
+// 初始化粒子
+for (let i = 0; i < 120; i++) {
+  particles.push(new Particle());
+}
+
+// 连线效果
+function drawLines() {
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 150) {
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.strokeStyle = `rgba(0, 240, 255, ${0.06 * (1 - dist / 150)})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+function animateParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => {
+    p.update();
+    p.draw();
+  });
+  drawLines();
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+// ========== 打字机效果 ==========
+const typeTexts = [
+  'const creativity = () => imagination & code;',
+  'while (alive) { learn(); build(); share(); }',
+  'if (passion > limits) { breakthrough(); }',
+  '// Welcome to the Future of Technology',
+  'export default function Dream() { ... }',
+  'npm install --save passion creativity',
+];
+
+let typeIndex = 0;
+let charIndex = 0;
+let isDeleting = false;
+const typeEl = document.getElementById('typewriter');
+
+function typeLoop() {
+  const current = typeTexts[typeIndex];
+  if (isDeleting) {
+    typeEl.textContent = current.substring(0, charIndex - 1);
+    charIndex--;
+  } else {
+    typeEl.textContent = current.substring(0, charIndex + 1);
+    charIndex++;
+  }
+
+  let speed = isDeleting ? 30 : 60;
+  if (!isDeleting && charIndex === current.length) {
+    speed = 2500;
+    isDeleting = true;
+  } else if (isDeleting && charIndex === 0) {
+    isDeleting = false;
+    typeIndex = (typeIndex + 1) % typeTexts.length;
+    speed = 500;
+  }
+  setTimeout(typeLoop, speed);
+}
+setTimeout(typeLoop, 2000);
+
+// ========== 代码雨 ==========
+function createCodeRain() {
+  const container = document.getElementById('codeRain');
+  const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン{}[]()<>=+-*/;.://#&$@!~';
+  for (let i = 0; i < 40; i++) {
+    const span = document.createElement('span');
+    span.className = 'code-char';
+    span.textContent = Array.from({length: Math.floor(Math.random() * 8) + 3}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    span.style.left = Math.random() * 100 + '%';
+    span.style.animationDuration = (Math.random() * 15 + 10) + 's';
+    span.style.animationDelay = (Math.random() * 20) + 's';
+    span.style.fontSize = (Math.random() * 0.8 + 0.6) + 'rem';
+    container.appendChild(span);
+  }
+}
+createCodeRain();
+
+// ========== 导航栏滚动效果 ==========
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  if (window.scrollY > 50) {
+    navbar.classList.add('scrolled');
+  } else {
+    navbar.classList.remove('scrolled');
+  }
+
+  // 滚动进度条
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = (scrollTop / docHeight) * 100;
+  document.getElementById('scrollProgress').style.width = progress + '%';
+
+  // 返回顶部按钮
+  const backToTop = document.getElementById('backToTop');
+  if (scrollTop > 600) {
+    backToTop.classList.add('visible');
+  } else {
+    backToTop.classList.remove('visible');
+  }
+});
+
+// ========== 滚动渐显动画 ==========
+const observerOptions = {
+  threshold: 0.15,
+  rootMargin: '0px 0px -50px 0px'
+};
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const el = entry.target;
+      const delay = parseInt(el.dataset.delay || 0);
+      setTimeout(() => {
+        el.classList.add('visible');
+      }, delay);
+
+      // 如果是技能条
+      if (el.classList.contains('skill-item')) {
+        const fill = el.querySelector('.skill-fill');
+        if (fill) {
+          fill.style.width = el.dataset.width + '%';
+        }
+      }
+
+      // 如果是统计数字
+      if (el.classList.contains('stat-item')) {
+        const numEl = el.querySelector('.stat-number');
+        if (numEl && numEl.dataset.target) {
+          animateNumber(numEl, parseInt(numEl.dataset.target));
+        }
+      }
+    }
+  });
+}, observerOptions);
+
+// 观察所有需要动画的元素
+document.querySelectorAll('.feature-card, .blog-card, .stat-item, .skill-item, .timeline-item').forEach(el => {
+  observer.observe(el);
+});
+
+// ========== 数字递增动画 ==========
+function animateNumber(element, target) {
+  let current = 0;
+  const increment = target / 60;
+  const timer = setInterval(() => {
+    current += increment;
+    if (current >= target) {
+      current = target;
+      clearInterval(timer);
+    }
+    element.textContent = Math.floor(current).toLocaleString();
+  }, 25);
+}
+
+// ========== 鼠标跟随光晕 ==========
+document.addEventListener('mousemove', (e) => {
+  const glow = document.createElement('div');
+  glow.style.cssText = `
+    position: fixed;
+    left: ${e.clientX}px;
+    top: ${e.clientY}px;
+    width: 8px;
+    height: 8px;
+    background: rgba(0, 240, 255, 0.5);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    animation: trailFade 0.8s ease-out forwards;
+  `;
+  document.body.appendChild(glow);
+  setTimeout(() => glow.remove(), 800);
+});
+
+// 添加trail淡出动画
+const trailStyle = document.createElement('style');
+trailStyle.textContent = `
+  @keyframes trailFade {
+    0% { opacity: 0.6; transform: translate(-50%,-50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%,-50%) scale(3); }
+  }
+`;
+document.head.appendChild(trailStyle);
+
+// ========== 平滑锚点滚动 ==========
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function (e) {
+    e.preventDefault();
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      target.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  });
+});
+
+// ========== 发送消息（模拟） ==========
+function sendMessage() {
+  const btn = event.target;
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '⏳ 发送中...';
+  btn.style.opacity = '0.7';
+
+  setTimeout(() => {
+    btn.innerHTML = '✅ 消息已发送！';
+    btn.style.opacity = '1';
+    btn.style.background = 'linear-gradient(135deg, #00ff88, #00cc66)';
+
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.style.background = '';
+    }, 2500);
+  }, 1500);
+}
+
+// ========== 视差滚动效果 ==========
+window.addEventListener('scroll', () => {
+  const scrollY = window.scrollY;
+  const heroContent = document.querySelector('.hero-content');
+  if (heroContent) {
+    heroContent.style.transform = `translateY(${scrollY * 0.3}px)`;
+    heroContent.style.opacity = 1 - scrollY / 800;
+  }
+
+  // 背景光晕视差
+  document.querySelectorAll('.bg-glow').forEach((glow, i) => {
+    glow.style.transform = `translateY(${scrollY * (0.1 + i * 0.05)}px)`;
+  });
+});
+
+// ========== 汉堡菜单 ==========
+const hamburger = document.getElementById('hamburger');
+const navLinks = document.querySelector('.nav-links');
+hamburger.addEventListener('click', () => {
+  navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
+  navLinks.style.flexDirection = 'column';
+  navLinks.style.position = 'absolute';
+  navLinks.style.top = '100%';
+  navLinks.style.left = '0';
+  navLinks.style.width = '100%';
+  navLinks.style.background = 'rgba(10,10,26,0.95)';
+  navLinks.style.padding = '20px';
+  navLinks.style.borderBottom = '1px solid rgba(0,240,255,0.15)';
+});
+
+// ========== 卡片3D倾斜效果 ==========
+document.querySelectorAll('.feature-card, .blog-card').forEach(card => {
+  card.addEventListener('mousemove', (e) => {
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = (y - centerY) / 25;
+    const rotateY = (centerX - x) / 25;
+    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-10px)`;
+  });
+
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0)';
+  });
+});
+
+// ========== 随机闪烁粒子（Hero区域） ==========
+function spawnGlowParticle() {
+  const hero = document.querySelector('.hero');
+  if (!hero) return;
+  const particle = document.createElement('div');
+  const size = Math.random() * 4 + 2;
+  particle.style.cssText = `
+    position: absolute;
+    width: ${size}px;
+    height: ${size}px;
+    background: rgba(0, 240, 255, ${Math.random() * 0.8 + 0.2});
+    border-radius: 50%;
+    box-shadow: 0 0 ${size * 3}px rgba(0, 240, 255, 0.5);
+    left: ${Math.random() * 100}%;
+    top: ${Math.random() * 100}%;
+    pointer-events: none;
+    z-index: 4;
+    animation: glowParticleFade ${Math.random() * 3 + 2}s ease-out forwards;
+  `;
+  hero.appendChild(particle);
+  setTimeout(() => particle.remove(), 5000);
+}
+
+setInterval(spawnGlowParticle, 400);
+
+const glowParticleStyle = document.createElement('style');
+glowParticleStyle.textContent = `
+  @keyframes glowParticleFade {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-50px) scale(0); }
+  }
+`;
+document.head.appendChild(glowParticleStyle);
+
+// ========== 控制台彩蛋 ==========
+console.log('%c⚡ NEXUS BLOG ⚡', 'font-size: 30px; font-weight: 900; background: linear-gradient(90deg, #00f0ff, #b44aff, #ff2d78); -webkit-background-clip: text; -webkit-text-fill-color: transparent;');
+console.log('%c欢迎来到赛博空间！', 'font-size: 14px; color: #00f0ff;');
+console.log('%c如果你也在看这段代码，那我们一定是同道中人 🚀', 'font-size: 12px; color: #8899aa;');
+</script>
+
+</body>
+</html>

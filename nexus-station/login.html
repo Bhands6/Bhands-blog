@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS STATION — 身份认证</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg-deep: #030108;
+    --bg-surface: #0a0a24;
+    --bg-panel: rgba(8, 10, 38, 0.7);
+    --bg-input: rgba(6, 8, 30, 0.85);
+    --cyan: #00f0ff;
+    --cyan-dim: #00f0ff44;
+    --cyan-soft: #00f0ff18;
+    --magenta: #ff00aa;
+    --magenta-dim: #ff00aa33;
+    --gold: #f0c040;
+    --green: #44ff88;
+    --text: #d0d8f0;
+    --text-muted: #4a5070;
+    --text-dim: #2a2e48;
+    --border-glow: rgba(0, 240, 255, 0.12);
+    --border-active: rgba(0, 240, 255, 0.4);
+    --font-display: 'Orbitron', sans-serif;
+    --font-body: 'Rajdhani', sans-serif;
+    --font-mono: 'Share Tech Mono', monospace;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font-body);
+    background: var(--bg-deep);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+  /* ── Scanlines ───────────────────────────── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0, 240, 255, 0.006) 2px, rgba(0, 240, 255, 0.006) 4px
+    );
+    pointer-events: none;
+    z-index: 10000;
+  }
+  /* ── Canvas ──────────────────────────────── */
+  #starfield {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+  }
+  /* ── Ambient Glow ────────────────────────── */
+  .glow-orb {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1;
+    filter: blur(100px);
+  }
+  .glow-orb.a {
+    width: 500px; height: 500px;
+    background: rgba(0, 240, 255, 0.06);
+    top: -150px; right: -100px;
+    animation: floatA 20s ease-in-out infinite;
+  }
+  .glow-orb.b {
+    width: 400px; height: 400px;
+    background: rgba(255, 0, 170, 0.04);
+    bottom: -100px; left: -80px;
+    animation: floatB 25s ease-in-out infinite;
+  }
+  .glow-orb.c {
+    width: 300px; height: 300px;
+    background: rgba(0, 240, 255, 0.03);
+    bottom: 30%; left: 40%;
+    animation: floatC 18s ease-in-out infinite;
+  }
+  @keyframes floatA { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-40px,30px)} }
+  @keyframes floatB { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,-25px)} }
+  @keyframes floatC { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-20px,20px)} }
+  /* ── Grid Background ─────────────────────── */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    background:
+      linear-gradient(90deg, var(--border-glow) 1px, transparent 1px),
+      linear-gradient(0deg, var(--border-glow) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 50% 60% at 50% 50%, black 10%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse 50% 60% at 50% 50%, black 10%, transparent 70%);
+    animation: gridMove 30s linear infinite;
+    opacity: 0.25;
+  }
+  @keyframes gridMove { from{background-position:0 0} to{background-position:60px 60px} }
+  /* ── Back to Home ────────────────────────── */
+  .back-home {
+    position: fixed;
+    top: 1.2rem;
+    left: 2rem;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    text-decoration: none;
+    text-transform: uppercase;
+    opacity: 0;
+    animation: fadeDown 0.8s ease 1.2s forwards;
+    transition: color 0.3s;
+  }
+  .back-home:hover { color: var(--cyan); }
+  .back-home svg { width: 14px; height: 14px; }
+  /* ── Main Layout ─────────────────────────── */
+  .auth-layout {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    height: 100vh;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  /* ── Left Info Panel ─────────────────────── */
+  .info-panel {
+    position: absolute;
+    left: 4rem;
+    bottom: 4rem;
+    max-width: 420px;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.5s forwards;
+  }
+  .info-logo {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.4em;
+    color: var(--cyan);
+    text-shadow: 0 0 20px var(--cyan-dim);
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 2rem;
+  }
+  .info-logo .dot {
+    width: 6px; height: 6px;
+    background: var(--cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--cyan), 0 0 20px var(--cyan-dim);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .info-title {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #fff;
+    line-height: 1.4;
+    margin-bottom: 1rem;
+  }
+  .info-desc {
+    font-size: 0.95rem;
+    font-weight: 300;
+    color: var(--text-muted);
+    line-height: 1.8;
+    margin-bottom: 2rem;
+  }
+  .info-stats {
+    display: flex;
+    gap: 2.5rem;
+  }
+  .info-stat-val {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--cyan);
+    text-shadow: 0 0 15px var(--cyan-dim);
+    line-height: 1;
+  }
+  .info-stat-label {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.25em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-top: 0.4rem;
+  }
+  /* ── Auth Card ───────────────────────────── */
+  .auth-card {
+    width: 440px;
+    max-width: 100%;
+    position: relative;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.3s forwards;
+  }
+  .auth-card::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 12px;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      var(--cyan) 0%,
+      transparent 30%,
+      transparent 70%,
+      var(--magenta) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.5;
+    animation: borderRotate 6s linear infinite;
+  }
+  @keyframes borderRotate {
+    0% { background: linear-gradient(0deg, var(--cyan), transparent 40%, transparent 60%, var(--magenta)); }
+    25% { background: linear-gradient(90deg, var(--cyan), transparent 40%, transparent 60%, var(--magenta)); }
+    50% { background: linear-gradient(180deg, var(--cyan), transparent 40%, transparent 60%, var(--magenta)); }
+    75% { background: linear-gradient(270deg, var(--cyan), transparent 40%, transparent 60%, var(--magenta)); }
+    100% { background: linear-gradient(360deg, var(--cyan), transparent 40%, transparent 60%, var(--magenta)); }
+  }
+  .auth-card-inner {
+    background: var(--bg-panel);
+    border-radius: 12px;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    padding: 3rem 2.8rem 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Corner accents */
+  .corner {
+    position: absolute;
+    width: 16px; height: 16px;
+    z-index: 5;
+  }
+  .corner::before, .corner::after {
+    content: '';
+    position: absolute;
+    background: var(--cyan);
+    box-shadow: 0 0 6px var(--cyan);
+  }
+  .corner.tl { top: 8px; left: 8px; }
+  .corner.tl::before { top: 0; left: 0; width: 16px; height: 1px; }
+  .corner.tl::after { top: 0; left: 0; width: 1px; height: 16px; }
+  .corner.tr { top: 8px; right: 8px; }
+  .corner.tr::before { top: 0; right: 0; width: 16px; height: 1px; }
+  .corner.tr::after { top: 0; right: 0; width: 1px; height: 16px; }
+  .corner.bl { bottom: 8px; left: 8px; }
+  .corner.bl::before { bottom: 0; left: 0; width: 16px; height: 1px; }
+  .corner.bl::after { bottom: 0; left: 0; width: 1px; height: 16px; }
+  .corner.br { bottom: 8px; right: 8px; }
+  .corner.br::before { bottom: 0; right: 0; width: 16px; height: 1px; }
+  .corner.br::after { bottom: 0; right: 0; width: 1px; height: 16px; }
+  .auth-card-inner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 10%; right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0.5;
+  }
+  /* ── Auth Header ─────────────────────────── */
+  .auth-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+  .auth-header-icon {
+    width: 48px; height: 48px;
+    margin: 0 auto 1.2rem;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .auth-header-icon .ring {
+    position: absolute;
+    border: 1px solid var(--border-glow);
+    border-radius: 50%;
+    animation: ringPulse 3s ease-in-out infinite;
+  }
+  .auth-header-icon .ring:nth-child(1) { width: 48px; height: 48px; }
+  .auth-header-icon .ring:nth-child(2) { width: 34px; height: 34px; animation-delay: 0.5s; }
+  .auth-header-icon .ring:nth-child(3) { width: 20px; height: 20px; animation-delay: 1s; }
+  .auth-header-icon .core {
+    width: 8px; height: 8px;
+    background: var(--cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--cyan), 0 0 20px var(--cyan-dim);
+    z-index: 2;
+  }
+  @keyframes ringPulse {
+    0%,100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.05); }
+  }
+  .auth-header h2 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: #fff;
+  }
+  .auth-header p {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+  }
+  /* ── Tab Toggle ──────────────────────────── */
+  .auth-tabs {
+    display: flex;
+    background: rgba(0, 240, 255, 0.03);
+    border: 1px solid var(--border-glow);
+    border-radius: 8px;
+    padding: 3px;
+    margin-bottom: 2rem;
+    position: relative;
+  }
+  .auth-tab {
+    flex: 1;
+    padding: 0.7rem;
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: color 0.3s;
+    position: relative;
+    z-index: 2;
+  }
+  .auth-tab.active { color: var(--bg-deep); }
+  .tab-slider {
+    position: absolute;
+    top: 3px; bottom: 3px;
+    width: calc(50% - 3px);
+    background: var(--cyan);
+    border-radius: 6px;
+    transition: left 0.4s cubic-bezier(0.68, -0.2, 0.27, 1.2);
+    box-shadow: 0 0 20px var(--cyan-dim);
+    z-index: 1;
+  }
+  .tab-slider.right { left: calc(50% + 0px); }
+  .tab-slider.left { left: 3px; }
+  /* ── Form Panels ─────────────────────────── */
+  .form-panels {
+    position: relative;
+    overflow: hidden;
+  }
+  .form-panel {
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    position: absolute;
+    width: 100%;
+    left: 0;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(20px);
+  }
+  .form-panel.active {
+    position: relative;
+    opacity: 1;
+    pointer-events: all;
+    transform: translateX(0);
+  }
+  .form-panel.exit-left {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  /* ── Input Group ─────────────────────────── */
+  .input-group {
+    margin-bottom: 1.4rem;
+    position: relative;
+  }
+  .input-label {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.35em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .input-label .dot {
+    width: 3px; height: 3px;
+    background: var(--cyan);
+    border-radius: 50%;
+    opacity: 0.5;
+    transition: opacity 0.3s, box-shadow 0.3s;
+  }
+  .input-group:focus-within .input-label .dot {
+    opacity: 1;
+    box-shadow: 0 0 6px var(--cyan);
+  }
+  .input-wrapper {
+    position: relative;
+  }
+  .input-wrapper input {
+    width: 100%;
+    padding: 0.85rem 1rem 0.85rem 2.6rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border-glow);
+    border-radius: 6px;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    letter-spacing: 0.02em;
+  }
+  .input-wrapper input::placeholder {
+    color: var(--text-dim);
+    font-weight: 300;
+  }
+  .input-wrapper input:focus {
+    border-color: var(--border-active);
+    box-shadow: 0 0 0 3px var(--cyan-soft), inset 0 0 20px rgba(0, 240, 255, 0.02);
+  }
+  .input-icon {
+    position: absolute;
+    left: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px; height: 16px;
+    color: var(--text-muted);
+    transition: color 0.3s;
+    pointer-events: none;
+  }
+  .input-group:focus-within .input-icon { color: var(--cyan); }
+  .input-wrapper .toggle-pw {
+    position: absolute;
+    right: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .input-wrapper .toggle-pw:hover { color: var(--cyan); }
+  /* ── Password Strength ───────────────────── */
+  .pw-strength {
+    display: flex;
+    gap: 4px;
+    margin-top: 0.6rem;
+    height: 2px;
+  }
+  .pw-strength .bar {
+    flex: 1;
+    background: var(--border-glow);
+    border-radius: 1px;
+    transition: background 0.4s;
+  }
+  .pw-strength.weak .bar:nth-child(1) { background: #ff4444; box-shadow: 0 0 6px rgba(255,68,68,0.3); }
+  .pw-strength.fair .bar:nth-child(-n+2) { background: var(--gold); box-shadow: 0 0 6px rgba(240,192,64,0.3); }
+  .pw-strength.good .bar:nth-child(-n+3) { background: var(--cyan); box-shadow: 0 0 6px var(--cyan-dim); }
+  .pw-strength.strong .bar { background: var(--green); box-shadow: 0 0 6px rgba(68,255,136,0.3); }
+  .pw-strength-text {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.2em;
+    margin-top: 0.4rem;
+    color: var(--text-muted);
+    text-align: right;
+    transition: color 0.3s;
+  }
+  .pw-strength.weak ~ .pw-strength-text { color: #ff4444; }
+  .pw-strength.fair ~ .pw-strength-text { color: var(--gold); }
+  .pw-strength.good ~ .pw-strength-text { color: var(--cyan); }
+  .pw-strength.strong ~ .pw-strength-text { color: var(--green); }
+  /* ── Options Row ─────────────────────────── */
+  .options-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+  .checkbox-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    cursor: pointer;
+  }
+  .checkbox-wrap input[type="checkbox"] { display: none; }
+  .checkbox-custom {
+    width: 14px; height: 14px;
+    border: 1px solid var(--text-muted);
+    border-radius: 3px;
+    position: relative;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .checkbox-wrap input:checked + .checkbox-custom {
+    border-color: var(--cyan);
+    background: var(--cyan);
+  }
+  .checkbox-wrap input:checked + .checkbox-custom::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 4px;
+    width: 4px; height: 7px;
+    border: solid var(--bg-deep);
+    border-width: 0 1.5px 1.5px 0;
+    transform: rotate(45deg);
+  }
+  .checkbox-text {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+  .forgot-link {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.3s;
+    text-transform: uppercase;
+  }
+  .forgot-link:hover { color: var(--cyan); }
+  /* ── Submit Button ───────────────────────── */
+  .btn-submit {
+    width: 100%;
+    padding: 0.95rem;
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    border: 1px solid var(--cyan);
+    background: transparent;
+    color: var(--cyan);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    border-radius: 6px;
+    transition: color 0.4s, box-shadow 0.4s;
+    margin-bottom: 1.8rem;
+  }
+  .btn-submit::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--cyan), #00c8ff);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    z-index: -1;
+  }
+  .btn-submit:hover {
+    color: var(--bg-deep);
+    box-shadow: 0 0 30px var(--cyan-dim), 0 0 60px rgba(0,240,255,0.1);
+  }
+  .btn-submit:hover::before { transform: scaleX(1); }
+  .btn-submit .btn-text { position: relative; z-index: 1; }
+  /* ── Divider ─────────────────────────────── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.8rem;
+  }
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border-glow);
+  }
+  .divider-text {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.3em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  /* ── Social / Alt Auth ───────────────────── */
+  .alt-auth {
+    display: flex;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+  }
+  .btn-social {
+    flex: 1;
+    padding: 0.75rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border-glow);
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .btn-social:hover {
+    border-color: var(--border-active);
+    background: rgba(0, 240, 255, 0.03);
+  }
+  .btn-social svg {
+    width: 16px; height: 16px;
+    color: var(--text-muted);
+    transition: color 0.3s;
+  }
+  .btn-social:hover svg { color: var(--cyan); }
+  .btn-social span {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+  /* ── Footer Text ─────────────────────────── */
+  .auth-footer-text {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 300;
+  }
+  .auth-footer-text a {
+    color: var(--cyan);
+    text-decoration: none;
+    font-weight: 500;
+    transition: text-shadow 0.3s;
+  }
+  .auth-footer-text a:hover {
+    text-shadow: 0 0 8px var(--cyan-dim);
+  }
+  /* ── Status Bar (top-right) ──────────────── */
+  .status-bar {
+    position: fixed;
+    top: 1.2rem;
+    right: 2rem;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    opacity: 0;
+    animation: fadeDown 0.8s ease 1s forwards;
+  }
+  .status-item {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+  }
+  .status-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .status-dot.warn { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeDown { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
+  /* ── Particles on Card ───────────────────── */
+  .card-particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    border-radius: 12px;
+    z-index: 0;
+  }
+  .particle {
+    position: absolute;
+    width: 2px; height: 2px;
+    background: var(--cyan);
+    border-radius: 50%;
+    opacity: 0;
+    animation: particleFloat 8s linear infinite;
+  }
+  .particle:nth-child(1) { left: 10%; animation-delay: 0s; animation-duration: 7s; }
+  .particle:nth-child(2) { left: 25%; animation-delay: 1.5s; animation-duration: 9s; }
+  .particle:nth-child(3) { left: 45%; animation-delay: 3s; animation-duration: 6s; }
+  .particle:nth-child(4) { left: 65%; animation-delay: 0.8s; animation-duration: 8s; }
+  .particle:nth-child(5) { left: 80%; animation-delay: 2.2s; animation-duration: 10s; }
+  .particle:nth-child(6) { left: 90%; animation-delay: 4s; animation-duration: 7.5s; }
+  @keyframes particleFloat {
+    0% { bottom: -5%; opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.6; }
+    100% { bottom: 105%; opacity: 0; }
+  }
+  /* ── Responsive ──────────────────────────── */
+  @media (max-width: 768px) {
+    .info-panel { display: none; }
+    .auth-card { width: 100%; }
+    .auth-card-inner { padding: 2.5rem 1.8rem 2rem; }
+    .status-bar { display: none; }
+    .alt-auth { flex-direction: column; }
+  }
+  @media (max-height: 700px) {
+    .auth-card-inner { padding: 2rem 2.5rem 1.5rem; }
+    .auth-header { margin-bottom: 1.5rem; }
+    .input-group { margin-bottom: 1rem; }
+    .options-row { margin-bottom: 1.2rem; }
+    .btn-submit { margin-bottom: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+<canvas id="starfield"></canvas>
+<div class="glow-orb a"></div>
+<div class="glow-orb b"></div>
+<div class="glow-orb c"></div>
+<div class="grid-bg"></div>
+
+<!-- Back to Home -->
+<a href="index.html" class="back-home">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M19 12H5M12 19l-7-7 7-7"/>
+  </svg>
+  返回 NEXUS
+</a>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <div class="status-item">
+    <div class="status-dot"></div>
+    QUANTUM LINK
+  </div>
+  <div class="status-item">
+    <div class="status-dot warn"></div>
+    AUTH REQUIRED
+  </div>
+  <div class="status-item" id="clock"></div>
+</div>
+
+<!-- Layout -->
+<div class="auth-layout">
+  <!-- Left Info -->
+  <div class="info-panel">
+    <div class="info-logo">
+      <div class="dot"></div>
+      NEXUS STATION
+    </div>
+    <div class="info-title">星际枢纽身份认证系统</div>
+    <p class="info-desc">
+      接入 NEXUS 量子通讯网络需要通过联邦安全认证。
+      您的生物特征将通过纠缠态加密通道传输至核心节点。
+    </p>
+    <div class="info-stats">
+      <div>
+        <div class="info-stat-val">1,247</div>
+        <div class="info-stat-label">光年跨度</div>
+      </div>
+      <div>
+        <div class="info-stat-val">4.7T</div>
+        <div class="info-stat-label">每秒数据流</div>
+      </div>
+      <div>
+        <div class="info-stat-val">99.97%</div>
+        <div class="info-stat-label">在线率</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth Card -->
+  <div class="auth-card">
+    <div class="auth-card-inner">
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+      <div class="card-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+      </div>
+
+      <!-- Header -->
+      <div class="auth-header">
+        <div class="auth-header-icon">
+          <div class="ring"></div>
+          <div class="ring"></div>
+          <div class="ring"></div>
+          <div class="core"></div>
+        </div>
+        <h2 id="auth-title">身份认证</h2>
+        <p id="auth-subtitle">IDENTITY VERIFICATION REQUIRED</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <div class="tab-slider left" id="tab-slider"></div>
+        <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">登录</button>
+        <button class="auth-tab" id="tab-register" onclick="switchTab('register')">注册</button>
+      </div>
+
+      <!-- Form Panels -->
+      <div class="form-panels">
+        <!-- Login Form -->
+        <div class="form-panel active" id="panel-login">
+          <div class="input-group">
+            <label class="input-label">
+              <span class="dot"></span>
+              身份编号 ID
+            </label>
+            <div class="input-wrapper">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <input type="text" placeholder="输入您的联邦身份编号" autocomplete="off">
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">
+              <span class="dot"></span>
+              加密密钥
+            </label>
+            <div class="input-wrapper">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <input type="password" placeholder="输入您的加密密钥" id="login-pw">
+              <button class="toggle-pw" onclick="togglePassword('login-pw', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="options-row">
+            <label class="checkbox-wrap">
+              <input type="checkbox" checked>
+              <div class="checkbox-custom"></div>
+              <span class="checkbox-text">保持连接</span>
+            </label>
+            <a href="#" class="forgot-link">密钥恢复</a>
+          </div>
+          <button class="btn-submit" onclick="handleSubmit('login')">
+            <span class="btn-text">建立连接</span>
+          </button>
+          <div class="divider">
+            <div class="divider-line"></div>
+            <span class="divider-text">或者</span>
+            <div class="divider-line"></div>
+          </div>
+          <div class="alt-auth">
+            <button class="btn-social">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z"/>
+                <path d="M2 12h20M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10A15 15 0 0 1 12 2Z"/>
+              </svg>
+              <span>量子通道</span>
+            </button>
+            <button class="btn-social">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <span>生物识别</span>
+            </button>
+            <button class="btn-social">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2" y="2" width="20" height="20" rx="2"/>
+                <path d="M7 7h.01M7 12h.01M7 17h.01M12 7h5M12 12h5M12 17h5"/>
+              </svg>
+              <span>硬件密钥</span>
+            </button>
+          </div>
+          <p class="auth-footer-text">
+            尚无联邦账户？ <a href="#" onclick="switchTab('register');return false;">申请注册</a>
+          </p>
+        </div>
+
+        <!-- Register Form -->
+        <div class="form-panel" id="panel-register">
+          <div class="input-group">
+            <label class="input-label">
+              <span class="dot"></span>
+              姓名 / 代号
+            </label>
+            <div class="input-wrapper">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <input type="text" placeholder="您的姓名或行动代号" autocomplete="off">
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">
+              <span class="dot"></span>
+              通讯频率
+            </label>
+            <div class="input-wrapper">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+              <input type="email" placeholder="your_id@nexus.fed" autocomplete="off">
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">
+              <span class="dot"></span>
+              加密密钥
+            </label>
+            <div class="input-wrapper">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <input type="password" placeholder="设置您的加密密钥" id="reg-pw" oninput="checkStrength(this.value)">
+              <button class="toggle-pw" onclick="togglePassword('reg-pw', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+            <div class="pw-strength" id="pw-strength">
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+            </div>
+            <div class="pw-strength-text" id="pw-strength-text"></div>
+          </div>
+          <div class="options-row" style="margin-bottom: 1.5rem;">
+            <label class="checkbox-wrap">
+              <input type="checkbox">
+              <div class="checkbox-custom"></div>
+              <span class="checkbox-text">接受联邦协议</span>
+            </label>
+          </div>
+          <button class="btn-submit" onclick="handleSubmit('register')">
+            <span class="btn-text">申请入网</span>
+          </button>
+          <div class="divider">
+            <div class="divider-line"></div>
+            <span class="divider-text">或者</span>
+            <div class="divider-line"></div>
+          </div>
+          <div class="alt-auth">
+            <button class="btn-social" style="flex:1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z"/>
+                <path d="M2 12h20M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10A15 15 0 0 1 12 2Z"/>
+              </svg>
+              <span>量子通道快速注册</span>
+            </button>
+          </div>
+          <p class="auth-footer-text">
+            已有联邦账户？ <a href="#" onclick="switchTab('login');return false;">立即登录</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Starfield ─────────────────────────────
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+  const STAR_COUNT = 500;
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  function initStars() {
+    stars = [];
+    for (let i = 0; i < STAR_COUNT; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.4 + 0.2,
+        alpha: Math.random() * 0.7 + 0.2,
+        speed: Math.random() * 0.0005 + 0.0002,
+        phase: Math.random() * Math.PI * 2,
+        drift: (Math.random() - 0.5) * 0.06
+      });
+    }
+  }
+  function drawStars(time) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const g1 = ctx.createRadialGradient(canvas.width*0.3, canvas.height*0.3, 0, canvas.width*0.3, canvas.height*0.3, canvas.width*0.4);
+    g1.addColorStop(0, 'rgba(0,240,255,0.012)');
+    g1.addColorStop(1, 'transparent');
+    ctx.fillStyle = g1;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const g2 = ctx.createRadialGradient(canvas.width*0.75, canvas.height*0.65, 0, canvas.width*0.75, canvas.height*0.65, canvas.width*0.35);
+    g2.addColorStop(0, 'rgba(255,0,170,0.008)');
+    g2.addColorStop(1, 'transparent');
+    ctx.fillStyle = g2;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(s => {
+      const twinkle = Math.sin(time * s.speed * 1000 + s.phase) * 0.3 + 0.7;
+      const a = s.alpha * twinkle;
+      s.x += s.drift;
+      s.y -= 0.015;
+      if (s.x < 0) s.x = canvas.width;
+      if (s.x > canvas.width) s.x = 0;
+      if (s.y < 0) { s.y = canvas.height; s.x = Math.random() * canvas.width; }
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(190,210,255,${a})`;
+      ctx.fill();
+      if (s.r > 1.1) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r * 3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(100,180,255,${a * 0.08})`;
+        ctx.fill();
+      }
+    });
+    requestAnimationFrame(drawStars);
+  }
+  resize();
+  initStars();
+  requestAnimationFrame(drawStars);
+  window.addEventListener('resize', () => { resize(); initStars(); });
+
+  // ── Clock ─────────────────────────────────
+  function updateClock() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+    document.getElementById('clock').textContent = `STATION TIME ${h}:${m}:${s}`;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ── Tab Switch ────────────────────────────
+  let currentTab = 'login';
+  function switchTab(tab) {
+    if (tab === currentTab) return;
+    const slider = document.getElementById('tab-slider');
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+    const panelLogin = document.getElementById('panel-login');
+    const panelRegister = document.getElementById('panel-register');
+    const title = document.getElementById('auth-title');
+    const subtitle = document.getElementById('auth-subtitle');
+
+    if (tab === 'register') {
+      slider.classList.remove('left');
+      slider.classList.add('right');
+      tabLogin.classList.remove('active');
+      tabRegister.classList.add('active');
+      panelLogin.classList.remove('active');
+      panelLogin.classList.add('exit-left');
+      setTimeout(() => {
+        panelLogin.classList.remove('exit-left');
+        panelRegister.classList.add('active');
+      }, 150);
+      title.textContent = '创建账户';
+      subtitle.textContent = 'REGISTER NEW FEDERATION ID';
+    } else {
+      slider.classList.remove('right');
+      slider.classList.add('left');
+      tabRegister.classList.remove('active');
+      tabLogin.classList.add('active');
+      panelRegister.classList.remove('active');
+      panelRegister.classList.add('exit-left');
+      setTimeout(() => {
+        panelRegister.classList.remove('exit-left');
+        panelLogin.classList.add('active');
+      }, 150);
+      title.textContent = '身份认证';
+      subtitle.textContent = 'IDENTITY VERIFICATION REQUIRED';
+    }
+    currentTab = tab;
+  }
+
+  // ── Password Toggle ───────────────────────
+  function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    btn.innerHTML = isPassword
+      ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+      : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  }
+
+  // ── Password Strength ─────────────────────
+  function checkStrength(pw) {
+    const el = document.getElementById('pw-strength');
+    const text = document.getElementById('pw-strength-text');
+    let score = 0;
+    if (pw.length >= 6) score++;
+    if (pw.length >= 10) score++;
+    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++;
+    el.className = 'pw-strength';
+    text.textContent = '';
+    if (pw.length === 0) return;
+    const labels = ['弱', '一般', '良好', '极强'];
+    const classes = ['weak', 'fair', 'good', 'strong'];
+    const idx = Math.min(score, 3);
+    el.classList.add(classes[idx]);
+    text.textContent = '密钥强度：' + labels[idx];
+  }
+
+  // ── Submit Handler ────────────────────────
+  function handleSubmit(type) {
+    const btn = event.currentTarget;
+    const original = btn.querySelector('.btn-text').textContent;
+    btn.querySelector('.btn-text').textContent = type === 'login' ? '验证中...' : '处理中...';
+    btn.style.pointerEvents = 'none';
+    setTimeout(() => {
+      btn.querySelector('.btn-text').textContent = type === 'login' ? '连接已建立' : '注册成功';
+      btn.style.borderColor = 'var(--green)';
+      btn.style.color = 'var(--green)';
+      setTimeout(() => {
+        btn.querySelector('.btn-text').textContent = original;
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        btn.style.pointerEvents = '';
+      }, 2000);
+    }, 1800);
+  }
+</script>
+</body>
+</html>

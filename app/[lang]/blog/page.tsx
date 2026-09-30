@@ -3,9 +3,11 @@ import type { Metadata } from "next";
 import Reveal from "@/components/reveal";
 import SiteFooter from "@/components/site-footer";
 import { getDict } from "@/lib/i18n";
+import { prisma } from "@/lib/prisma";
 import {
   categoryKeys,
   getCategories,
+  getPost,
   getPostsForLang,
   getTags,
   isLang,
@@ -54,6 +56,28 @@ export default async function BlogPage({
     const q = usp.toString();
     return `/${lang}/blog${q ? `?${q}` : ""}`;
   };
+
+  // 阅读量 + 热榜（数据库不可用时静默降级，不影响列表）
+  let viewsBySlug = new Map<string, number>();
+  let hot: { slug: string; title: string; views: number }[] = [];
+  try {
+    const stats = await prisma.postStat.findMany({
+      where: { postLang: lang, views: { gt: 0 } },
+      orderBy: { views: "desc" },
+    });
+    viewsBySlug = new Map(stats.map((s) => [s.postSlug, Number(s.views)]));
+    hot = stats
+      .slice(0, 5)
+      .map((s) => {
+        const post = getPost(lang, s.postSlug);
+        return post
+          ? { slug: s.postSlug, title: post.title, views: Number(s.views) }
+          : null;
+      })
+      .filter((x): x is { slug: string; title: string; views: number } => x !== null);
+  } catch {
+    // 数据库不可达时保持空
+  }
 
   return (
     <>
@@ -105,6 +129,21 @@ export default async function BlogPage({
           </div>
         )}
 
+        {hot.length > 0 && (
+          <div className="hot-strip">
+            <span className="hot-label">SEC // {t.blog.hot}</span>
+            <div className="hot-items">
+              {hot.map((h, i) => (
+                <Link key={h.slug} href={`/${lang}/blog/${h.slug}`} className="hot-item">
+                  <span className="hot-rank">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="hot-title">{h.title}</span>
+                  <span className="hot-views">◇ {h.views}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 文章列表 */}
         <dl className="mt-14 pb-4">
           {posts.map((p, i) => (
@@ -129,6 +168,7 @@ export default async function BlogPage({
                     <p className="mt-3 text-xs text-faint">
                       {t.category[p.category]} · {t.post.minutes(p.readingMinutes)}
                       {p.tags.length > 0 && <span> · {p.tags.join(" / ")}</span>}
+                      {viewsBySlug.has(p.slug) && <span> · {t.blog.views(viewsBySlug.get(p.slug)!)}</span>}
                     </p>
                   </dd>
                 </div>

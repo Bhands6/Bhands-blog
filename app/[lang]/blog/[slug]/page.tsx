@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import SiteFooter from "@/components/site-footer";
 import Toc from "@/components/toc";
-import Twikoo from "@/components/twikoo";
+import Comments from "@/components/comments";
+import PostReactions from "@/components/post-reactions";
 import { getDict } from "@/lib/i18n";
 import { allRoutes, getAdjacent, getPost, isLang } from "@/lib/posts";
 import { evaluate } from "@mdx-js/mdx";
@@ -110,6 +111,8 @@ export default async function PostPage({
           </p>
         )}
 
+        <PostReactions lang={lang} slug={post.slug} />
+
         <div className="mt-14 grid gap-12 xl:grid-cols-[1fr_220px]">
           <div className="article-body min-w-0">
             <MDXContent />
@@ -145,7 +148,13 @@ export default async function PostPage({
           )}
         </nav>
 
-        <Twikoo title={t.post.comments} />
+        <Comments
+          title={t.post.comments}
+          lang={lang}
+          slug={post.slug}
+          loginHref={`/${lang}/login`}
+          loginLabel={t.nexus.login}
+        />
       </article>
       <SiteFooter lang={lang} />
     </>
