@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getDict } from "@/lib/i18n";
 import type { Lang } from "@/lib/posts";
 import {
@@ -20,8 +20,11 @@ function withLang(pathname: string, lang: Lang): string {
 /** NEXUS 风格顶部导航：博客站点链接（NEXUS STATION 主题移植） */
 export default function SiteHeader({ lang }: { lang: Lang }) {
   const pathname = usePathname() ?? `/${lang}`;
+  const router = useRouter();
   const t = getDict(lang);
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const user = useSyncExternalStore(subscribeAuth, getAuth, getServerAuth);
 
   useEffect(() => {
@@ -30,6 +33,23 @@ export default function SiteHeader({ lang }: { lang: Lang }) {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // 点击外部 / Esc 关闭用户菜单
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
   const seg = (p: string) => `/${lang}${p}`;
   const isActive = (p: string) =>
@@ -68,30 +88,6 @@ export default function SiteHeader({ lang }: { lang: Lang }) {
             </Link>
           </li>
         )}
-        {user ? (
-          <>
-            <li>
-              <span className="nx-user-chip" title={user.displayName}>
-                <span className="user-dot" aria-hidden="true" />
-                {user.displayName}
-              </span>
-            </li>
-            <li>
-              <button type="button" className="nx-logout" onClick={() => void authLogout()}>
-                {t.nexus.logout}
-              </button>
-            </li>
-          </>
-        ) : (
-          <li>
-            <Link
-              href={`/${lang}/login`}
-              className={pathname.startsWith(`/${lang}/login`) ? "active" : ""}
-            >
-              {t.nexus.login}
-            </Link>
-          </li>
-        )}
       </ul>
       <div className="nx-nav-right">
         <div className="nx-lang" aria-label="Language">
@@ -102,10 +98,57 @@ export default function SiteHeader({ lang }: { lang: Lang }) {
             EN
           </Link>
         </div>
-        <div className="nx-nav-status">
-          <span className="live-dot" aria-hidden="true" />
-          {t.nexus.relay}
-        </div>
+        {user ? (
+          <div className="nx-user-menu" ref={menuRef}>
+            <button
+              type="button"
+              className="nx-user-chip"
+              title={user.displayName}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              <span className="user-dot" aria-hidden="true" />
+              {user.displayName}
+            </button>
+            {menuOpen && (
+              <div className="nx-user-dropdown" role="menu">
+                {user.role === "ADMIN" && (
+                  <Link
+                    href={`/${lang}/write`}
+                    className="nx-dropdown-item"
+                    role="menuitem"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {t.nexus.write}
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  className="nx-logout"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    void (async () => {
+                      await authLogout();
+                      // 退出后回首页；否则会停在 /admin、/write 的守卫空白页上
+                      if (pathname !== `/${lang}`) router.replace(`/${lang}`);
+                    })();
+                  }}
+                >
+                  {t.nexus.logout}
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Link
+            href={`/${lang}/login`}
+            className={`nx-login-link${pathname.startsWith(`/${lang}/login`) ? " active" : ""}`}
+          >
+            {t.nexus.login}
+          </Link>
+        )}
       </div>
     </nav>
   );
