@@ -7,7 +7,7 @@ export const site = {
     "Bhands 的个人博客——游戏开发、生活与随笔。",
   author: "Bhands",
   socials: {
-    github: "https://github.com/your-name", // TODO: 换成你的 GitHub
+    github: "https://github.com/Bhands6",
     email: "mailto:you@example.com", // TODO: 换成你的邮箱
   },
 } as const;
