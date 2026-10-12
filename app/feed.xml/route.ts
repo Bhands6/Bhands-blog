@@ -1,7 +1,7 @@
 import { getPostsForLang } from "@/lib/posts";
 import { site } from "@/lib/site";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 const escape = (s: string) =>
   s
@@ -10,8 +10,8 @@ const escape = (s: string) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
-export function GET() {
-  const posts = getPostsForLang("zh");
+export async function GET() {
+  const posts = await getPostsForLang("zh");
   const items = posts
     .map(
       (p) => `    <item>

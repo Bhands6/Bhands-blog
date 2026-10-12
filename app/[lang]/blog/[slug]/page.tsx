@@ -5,6 +5,8 @@ import SiteFooter from "@/components/site-footer";
 import Toc from "@/components/toc";
 import Comments from "@/components/comments";
 import PostReactions from "@/components/post-reactions";
+import EditPostLink from "@/components/edit-post-link";
+import DeletePostButton from "@/components/delete-post-button";
 import { getDict } from "@/lib/i18n";
 import { allRoutes, getAdjacent, getPost, isLang } from "@/lib/posts";
 import { evaluate } from "@mdx-js/mdx";
@@ -17,16 +19,29 @@ export function generateStaticParams() {
   return allRoutes();
 }
 
-export const dynamicParams = false;
+// MDX 文章构建期预渲染；在线写作的文章按需服务端渲染。
+// 显式覆盖 [lang]/layout.tsx 继承下来的 dynamicParams=false
+export const dynamicParams = true;
 
+// 中文 slug 在 URL 里是百分号编码，路由参数需要先解码
+function decodeSlug(s: string): string {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
+}
+
+// MDX 文章构建期预渲染；在线写作的文章按需服务端渲染
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ lang: string; slug: string }>;
 }): Promise<Metadata> {
-  const { lang: raw, slug } = await params;
+  const { lang: raw, slug: encoded } = await params;
   const lang = isLang(raw) ? raw : "zh";
-  const post = getPost(lang, slug);
+  const slug = decodeSlug(encoded);
+  const post = await getPost(lang, slug);
   if (!post) return {};
   return {
     title: post.title,
@@ -46,12 +61,13 @@ export default async function PostPage({
 }: {
   params: Promise<{ lang: string; slug: string }>;
 }) {
-  const { lang: raw, slug } = await params;
+  const { lang: raw, slug: encoded } = await params;
   const lang = isLang(raw) ? raw : "zh";
-  const post = getPost(lang, slug);
+  const slug = decodeSlug(encoded);
+  const post = await getPost(lang, slug);
   if (!post) notFound();
   const t = getDict(lang);
-  const { prev, next } = getAdjacent(lang, slug);
+  const { prev, next } = await getAdjacent(lang, slug);
 
   const { default: MDXContent } = await evaluate(post.content, {
     ...(runtime as unknown as Record<string, unknown>),
@@ -64,8 +80,18 @@ export default async function PostPage({
 
   return (
     <>
-      <article className="mx-auto max-w-3xl px-6 pt-36">
+      <article className="mx-auto max-w-5xl px-6 pt-32">
+        <Link href={`/${lang}/blog`} className="post-back">
+          <span aria-hidden="true">←</span>
+          {t.post.back}
+        </Link>
         <h1 className="giant-zh">{post.title}</h1>
+        {post.source === "db" && post.id && (
+          <div className="post-admin-links">
+            <EditPostLink lang={lang} postId={post.id} />
+            <DeletePostButton lang={lang} postId={post.id} />
+          </div>
+        )}
 
         <dl className="mt-10">
           <div className="fact-row">
@@ -113,7 +139,7 @@ export default async function PostPage({
 
         <PostReactions lang={lang} slug={post.slug} />
 
-        <div className="mt-14 grid gap-12 xl:grid-cols-[1fr_220px]">
+        <div className="mt-14 grid gap-12 xl:grid-cols-[minmax(0,1fr)_13.75rem]">
           <div className="article-body min-w-0">
             <MDXContent />
           </div>

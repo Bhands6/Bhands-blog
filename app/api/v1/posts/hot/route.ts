@@ -14,7 +14,7 @@ export async function GET(req: Request) {
   const items: { slug: string; title: string; summary: string; views: number }[] = [];
   for (let i = 0; i < rows.length; i += 2) {
     const slug = rows[i];
-    const post = getPost(lang as "zh" | "en", slug);
+    const post = await getPost(lang as "zh" | "en", slug);
     if (!post) continue;
     items.push({
       slug,

@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { getPostsForLang, langs } from "@/lib/posts";
 import { site } from "@/lib/site";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const entries: MetadataRoute.Sitemap = [];
 
@@ -17,7 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         priority: 0.6,
       });
     }
-    for (const p of getPostsForLang(lang)) {
+    for (const p of await getPostsForLang(lang)) {
       entries.push({
         url: `${base}/blog/${p.slug}`,
         lastModified: new Date(p.date),

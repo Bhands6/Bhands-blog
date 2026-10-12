@@ -42,12 +42,12 @@ export default async function BlogPage({
     : undefined;
   const tag = typeof sp.tag === "string" && sp.tag ? sp.tag : undefined;
 
-  const all = getPostsForLang(lang);
+  const all = await getPostsForLang(lang);
   const posts = all.filter(
     (p) => (!category || p.category === category) && (!tag || p.tags.includes(tag))
   );
-  const categories = getCategories(lang);
-  const tags = getTags(lang);
+  const categories = await getCategories(lang);
+  const tags = await getTags(lang);
 
   const href = (c?: string, tg?: string) => {
     const usp = new URLSearchParams();
@@ -66,15 +66,18 @@ export default async function BlogPage({
       orderBy: { views: "desc" },
     });
     viewsBySlug = new Map(stats.map((s) => [s.postSlug, Number(s.views)]));
-    hot = stats
-      .slice(0, 5)
-      .map((s) => {
-        const post = getPost(lang, s.postSlug);
-        return post
-          ? { slug: s.postSlug, title: post.title, views: Number(s.views) }
-          : null;
-      })
-      .filter((x): x is { slug: string; title: string; views: number } => x !== null);
+    hot = (
+      await Promise.all(
+        stats
+          .slice(0, 5)
+          .map(async (s) => {
+            const post = await getPost(lang, s.postSlug);
+            return post
+              ? { slug: s.postSlug, title: post.title, views: Number(s.views) }
+              : null;
+          }),
+      )
+    ).filter((x): x is { slug: string; title: string; views: number } => x !== null);
   } catch {
     // 数据库不可达时保持空
   }

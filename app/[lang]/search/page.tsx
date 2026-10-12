@@ -22,7 +22,7 @@ export default async function SearchPage({
 }) {
   const { lang: raw } = await params;
   const lang = isLang(raw) ? raw : "zh";
-  const docs = getSearchIndex(lang);
+  const docs = await getSearchIndex(lang);
 
   return (
     <>

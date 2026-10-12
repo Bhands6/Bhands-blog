@@ -28,6 +28,7 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   comments Comment[]
+  posts    Post[]
 
   @@map("users")
 }
@@ -71,4 +72,40 @@ model PostStat {
 
   @@id([postLang, postSlug])
   @@map("post_stats")
+}
+
+// 在线写作的文章（与 content/ 下 MDX 文章并存，本地文件同名时优先）
+model Post {
+  id        BigInt   @id @default(autoincrement())
+  lang      String   @db.Char(2)
+  slug      String   @db.VarChar(200)
+  title     String   @db.VarChar(200)
+  summary   String   @db.VarChar(500)
+  category  String   @db.VarChar(20) // tech | life | essay
+  tags      Json? // string[]
+  content   String   @db.Text // Markdown 正文（无 frontmatter）
+  authorId  BigInt   @map("author_id")
+  status    Int      @default(1) // 1 可见 0 隐藏
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  author User @relation(fields: [authorId], references: [id])
+
+  @@unique([lang, slug])
+  @@map("posts")
+}
+
+// 写作时上传的图片：二进制直接存 MySQL，通过 /api/v1/media/{id} 读取。
+// 之所以不走 public/：本项目部署在 Vercel，serverless 文件系统只读且不提供运行时新增的静态文件。
+model Media {
+  id         BigInt   @id @default(autoincrement())
+  filename   String   @db.VarChar(200)
+  mimeType   String   @map("mime_type") @db.VarChar(50)
+  byteSize   Int      @map("byte_size")
+  data       Bytes    @db.LongBlob
+  uploaderId BigInt   @map("uploader_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([uploaderId])
+  @@map("media")
 }

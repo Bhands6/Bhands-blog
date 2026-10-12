@@ -24,7 +24,7 @@ export default async function ArchivesPage({
   const { lang: raw } = await params;
   const lang = isLang(raw) ? raw : "zh";
   const t = getDict(lang);
-  const posts = getPostsForLang(lang);
+  const posts = await getPostsForLang(lang);
 
   const groups = new Map<string, PostMeta[]>();
   for (const p of posts) {
