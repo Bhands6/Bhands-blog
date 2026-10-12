@@ -14,6 +14,9 @@ import {
   type CategoryKey,
 } from "@/lib/posts";
 
+/** 列表页「热门文章」展示条数 */
+const HOT_COUNT = 3;
+
 export async function generateMetadata({
   params,
 }: {
@@ -81,7 +84,7 @@ export default async function BlogPage({
     hot = ranked
       .filter((x): x is NonNullable<typeof x> => x !== null)
       .sort((a, b) => b.views - a.views || b.sortKey.localeCompare(a.sortKey))
-      .slice(0, 5)
+      .slice(0, HOT_COUNT)
       .map(({ slug, title, views }) => ({ slug, title, views }));
   } catch {
     // 数据库不可达时保持空
