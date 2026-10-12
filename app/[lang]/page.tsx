@@ -2,8 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import Reveal from "@/components/reveal";
 import SiteFooter from "@/components/site-footer";
-import Starfield from "@/components/starfield";
-import ParticleTrail from "@/components/particle-trail";
+import HeroCta from "@/components/hero-cta";
 import NexusGauge from "@/components/nexus-gauge";
 import NexusStarmap from "@/components/nexus-starmap";
 import NexusTerminal from "@/components/nexus-terminal";
@@ -39,11 +38,11 @@ export default async function LandingPage({
   const n = t.nexus;
 
   // 真实博客数据：仪表盘统计 + 最新文章
-  const allPosts = getPostsForLang(lang);
+  const allPosts = await getPostsForLang(lang);
   const latestPosts = allPosts.slice(0, 5);
   const totalMinutes = allPosts.reduce((s, p) => s + p.readingMinutes, 0);
-  const catCount = getCategories(lang).length;
-  const tagCount = getTags(lang).length;
+  const catCount = (await getCategories(lang)).length;
+  const tagCount = (await getTags(lang)).length;
   // eslint-disable-next-line react-hooks/purity -- SSG 下该值冻结在构建期，属预期行为
   const monthAgo = Date.now() - 30 * 24 * 3600 * 1000;
   const recentCount = allPosts.filter((p) => new Date(p.date).getTime() >= monthAgo).length;
@@ -90,8 +89,7 @@ export default async function LandingPage({
 
   return (
     <>
-      <Starfield />
-      <ParticleTrail />
+      {/* 星空 / 粒子拖尾已提到 [lang]/layout.tsx，全站共用 */}
       <div className="glow-orb cyan" aria-hidden="true" />
       <div className="glow-orb magenta" aria-hidden="true" />
       <div className="glow-orb gold" aria-hidden="true" />
@@ -119,9 +117,7 @@ export default async function LandingPage({
         <p className="hero-sub">{n.hero.sub}</p>
         <p className="hero-coords">{n.hero.coords}</p>
         <div className="hero-cta">
-          <Link href={`/${lang}/login`} className="btn-primary">
-            {n.hero.primary}
-          </Link>
+          <HeroCta lang={lang} label={n.hero.primary} />
           <a href="#posts" className="btn-ghost">
             {n.hero.ghost}
           </a>

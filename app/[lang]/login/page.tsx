@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Starfield from "@/components/starfield";
 import AuthPanel from "@/components/auth-panel";
 import { getDict } from "@/lib/i18n";
 import { isLang } from "@/lib/posts";
@@ -26,7 +25,7 @@ export default async function LoginPage({
 
   return (
     <>
-      <Starfield />
+      {/* 星空 / 粒子拖尾已提到 [lang]/layout.tsx，全站共用 */}
       <div className="glow-orb cyan" aria-hidden="true" />
       <div className="glow-orb magenta" aria-hidden="true" />
       <div className="nx-auth-bg-grid" aria-hidden="true" />
