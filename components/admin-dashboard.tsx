@@ -64,7 +64,13 @@ export default function AdminDashboard({ lang }: { lang: Lang }) {
   }, [hydrated, isAdmin, router, lang]);
 
   const [tab, setTab] = useState<"comments" | "users">("comments");
-  const [stats, setStats] = useState<{ users: number; comments: number; likes: number; views: number } | null>(null);
+  const [stats, setStats] = useState<{
+    users: number;
+    posts: number;
+    comments: number;
+    likes: number;
+    views: number;
+  } | null>(null);
   const [comments, setComments] = useState<AdminComment[]>([]);
   const [commentTotal, setCommentTotal] = useState(0);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -162,6 +168,23 @@ export default function AdminDashboard({ lang }: { lang: Lang }) {
     }
   };
 
+  const destroyUser = async (id: string) => {
+    if (!window.confirm(t.confirmDeleteUser)) return;
+    const res = await authFetch(`/api/v1/admin/users/${id}`, { method: "DELETE" });
+    const data = (await res?.json().catch(() => ({}))) ?? {};
+    if (res?.ok) {
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+      setError(null);
+      void loadStats();
+    } else if (data.code === "SELF_DELETE") {
+      setError(t.selfDelete);
+    } else if (data.code === "HAS_POSTS") {
+      setError(t.hasPosts);
+    } else {
+      showError(data.code, res);
+    }
+  };
+
   // ── 守卫 ──
   // 未 hydration（SSR）或权限不足时都不渲染内容；
   // 权限不足的情况由上面的 effect 重定向回首页（选项 A）。
@@ -174,12 +197,13 @@ export default function AdminDashboard({ lang }: { lang: Lang }) {
 
       {stats && (
         <div className="admin-stats">
-          {[
-            { k: t.stats.users, v: stats.users },
-            { k: t.stats.comments, v: stats.comments },
-            { k: t.stats.likes, v: stats.likes },
-            { k: t.stats.views, v: stats.views },
-          ].map((s) => (
+              {[
+                { k: t.stats.users, v: stats.users },
+                { k: t.stats.posts, v: stats.posts },
+                { k: t.stats.comments, v: stats.comments },
+                { k: t.stats.likes, v: stats.likes },
+                { k: t.stats.views, v: stats.views },
+              ].map((s) => (
             <div className="admin-stat" key={s.k}>
               <span className="admin-stat-val">{s.v.toLocaleString()}</span>
               <span className="admin-stat-key">{s.k}</span>
@@ -254,7 +278,7 @@ export default function AdminDashboard({ lang }: { lang: Lang }) {
       )}
 
       {tab === "users" && (
-        <div className="admin-table">
+        <div className="admin-table admin-table-users">
           <div className="admin-row admin-row-head">
             <span>{t.table.user}</span>
             <span>{t.table.email}</span>
@@ -280,16 +304,22 @@ export default function AdminDashboard({ lang }: { lang: Lang }) {
                 </span>
               </span>
               <span className="admin-actions">
-                {u.id !== user?.id &&
-                  (u.status === 1 ? (
-                    <button type="button" className="danger" onClick={() => void patchUser(u.id, 0)}>
-                      {t.actions.ban}
+                {u.id !== user?.id && (
+                  <>
+                    {u.status === 1 ? (
+                      <button type="button" className="danger" onClick={() => void patchUser(u.id, 0)}>
+                        {t.actions.ban}
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => void patchUser(u.id, 1)}>
+                        {t.actions.unban}
+                      </button>
+                    )}
+                    <button type="button" className="danger" onClick={() => void destroyUser(u.id)}>
+                      {t.actions.delete}
                     </button>
-                  ) : (
-                    <button type="button" onClick={() => void patchUser(u.id, 1)}>
-                      {t.actions.unban}
-                    </button>
-                  ))}
+                  </>
+                )}
               </span>
             </div>
           ))}

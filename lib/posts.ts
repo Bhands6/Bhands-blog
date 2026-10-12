@@ -181,6 +181,17 @@ export const getPostsForLang = cache(async (lang: Lang): Promise<Post[]> => {
   return [...merged, ...fallbacks].sort(byDateDesc);
 });
 
+/**
+ * 全站文章总数（按 slug 去重）。
+ *
+ * 不能把两种语言的数量直接相加：英文视图缺翻译时会回退中文正文，
+ * 同一个 slug 会在 en 列表里再出现一次（标记 fallback）。
+ */
+export const countAllPosts = cache(async (): Promise<number> => {
+  const [zh, en] = await Promise.all([getPostsForLang("zh"), getPostsForLang("en")]);
+  return new Set([...zh, ...en].map((p) => p.slug)).size;
+});
+
 export const getPost = cache(async (lang: Lang, slug: string): Promise<Post | null> => {
   const own = readLang(lang).find((p) => p.slug === slug);
   if (own) return own;

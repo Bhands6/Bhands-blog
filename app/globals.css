@@ -2564,7 +2564,8 @@
   }
   .admin-stats {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    /* 自适应列数：原先写死 4 列，加到 5 张卡后窄屏会挤成一团 */
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
     gap: 2px;
     margin-bottom: 2.5rem;
   }
@@ -2642,6 +2643,10 @@
   }
   .admin-row:last-child {
     border-bottom: none;
+  }
+  /* 用户表比评论表多一列（操作）：沿用默认的 5 列会把第 6 列挤到第二行 */
+  .admin-table-users .admin-row {
+    grid-template-columns: 1.4fr 1.6fr 0.75fr 0.5fr 0.75fr auto;
   }
   .admin-row-head {
     font-family: var(--font-mono-nx);
