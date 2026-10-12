@@ -66,18 +66,23 @@ export default async function BlogPage({
       orderBy: { views: "desc" },
     });
     viewsBySlug = new Map(stats.map((s) => [s.postSlug, Number(s.views)]));
-    hot = (
-      await Promise.all(
-        stats
-          .slice(0, 5)
-          .map(async (s) => {
-            const post = await getPost(lang, s.postSlug);
-            return post
-              ? { slug: s.postSlug, title: post.title, views: Number(s.views) }
-              : null;
-          }),
-      )
-    ).filter((x): x is { slug: string; title: string; views: number } => x !== null);
+
+    // 热榜必须带次级排序键：views 全相等时 SQL 的返回顺序是不确定的，
+    // 实测会退化成 slug 字母序 —— 看起来像「写得最早的最热门」。
+    // 统一口径为「浏览量 desc，发布时间 desc」，与 /api/v1/posts/hot 保持一致。
+    const ranked = await Promise.all(
+      stats.map(async (s) => {
+        const post = await getPost(lang, s.postSlug);
+        return post
+          ? { slug: s.postSlug, title: post.title, views: Number(s.views), sortKey: post.sortKey }
+          : null;
+      }),
+    );
+    hot = ranked
+      .filter((x): x is NonNullable<typeof x> => x !== null)
+      .sort((a, b) => b.views - a.views || b.sortKey.localeCompare(a.sortKey))
+      .slice(0, 5)
+      .map(({ slug, title, views }) => ({ slug, title, views }));
   } catch {
     // 数据库不可达时保持空
   }

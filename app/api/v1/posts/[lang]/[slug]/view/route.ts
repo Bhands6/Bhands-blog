@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { hashIp, recordView } from "@/lib/stats";
+import { getViews, hashIp, recordView } from "@/lib/stats";
 
 export async function POST(
   req: Request,
@@ -14,5 +14,8 @@ export async function POST(
     req.headers.get("x-real-ip") ??
     "unknown";
   const fresh = await recordView(lang, slug, hashIp(ip));
-  return NextResponse.json({ counted: fresh });
+  // 回传打点后的最新浏览量：前端「拉取统计」与「浏览打点」是并发发出的，
+  // 只返回 counted 的话，页面会一直显示打点之前的旧值（首次访问少 1）
+  const views = await getViews(lang, slug);
+  return NextResponse.json({ counted: fresh, views });
 }

@@ -3,10 +3,13 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { getAuth, getServerAuth, subscribeAuth } from "@/lib/auth-client";
+import { getDict } from "@/lib/i18n";
+import type { Lang } from "@/lib/posts";
 
 /** 点赞 + 浏览量（数据来自 /api/v1/posts/{lang}/{slug}/like 与 /view） */
-export default function PostReactions({ lang, slug }: { lang: string; slug: string }) {
+export default function PostReactions({ lang, slug }: { lang: Lang; slug: string }) {
   const router = useRouter();
+  const t = getDict(lang);
   const user = useSyncExternalStore(subscribeAuth, getAuth, getServerAuth);
   const [count, setCount] = useState(0);
   const [views, setViews] = useState(0);
@@ -32,9 +35,19 @@ export default function PostReactions({ lang, slug }: { lang: string; slug: stri
     void loadStats();
   }, [loadStats]);
 
-  // 浏览打点：服务端按 IP+天去重
+  // 浏览打点：服务端按 IP+天去重。打点接口会回传最新浏览量，用它覆盖显示值 ——
+  // 下面的 loadStats() 与这里是并发发出的，不覆盖的话页面会停在打点前的旧数字
   useEffect(() => {
-    fetch(`/api/v1/posts/${lang}/${slug}/view`, { method: "POST" }).catch(() => {});
+    let alive = true;
+    fetch(`/api/v1/posts/${lang}/${slug}/view`, { method: "POST" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { views?: number } | null) => {
+        if (alive && d && typeof d.views === "number") setViews(d.views);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
   }, [lang, slug]);
 
   const toggle = async () => {
@@ -72,7 +85,9 @@ export default function PostReactions({ lang, slug }: { lang: string; slug: stri
         </svg>
         {count}
       </button>
-      <span className="views-chip">◇ {views} VIEWS</span>
+      <span className="views-chip" title={t.post.views}>
+        ◇ {views} {t.post.views}
+      </span>
     </div>
   );
 }

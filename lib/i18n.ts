@@ -62,6 +62,7 @@ export const dictionaries = {
       back: "返回列表",
       fallbackNotice: "本文暂无英文版，以下是中文原文。",
       comments: "评论",
+      views: "浏览",
     },
     archives: {
       title: "归档",
@@ -499,6 +500,7 @@ export const dictionaries = {
       back: "Back to list",
       fallbackNotice: "No English version yet — showing the Chinese original.",
       comments: "Comments",
+      views: "Views",
     },
     archives: {
       title: "Archives",
