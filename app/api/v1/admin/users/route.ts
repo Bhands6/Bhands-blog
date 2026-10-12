@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdminPayload } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 
 const PAGE_SIZE = 20;
 
 export async function GET(req: Request) {
-  const admin = await getAdminPayload(req);
-  if (!admin) {
-    return NextResponse.json({ error: "需要 ADMIN 权限", code: "FORBIDDEN" }, { status: 403 });
-  }
+  const admin = await requireAdmin(req);
+  if ("error" in admin) return admin.error;
   const url = new URL(req.url);
   const page = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1);
 

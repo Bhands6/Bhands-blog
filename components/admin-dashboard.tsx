@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import { getDict } from "@/lib/i18n";
 import type { Lang } from "@/lib/posts";
@@ -33,6 +34,9 @@ interface AdminUser {
   commentCount: number;
 }
 
+/** 空订阅器：配合 useSyncExternalStore 的 server/client 快照差异判断是否已 hydration */
+const noopSubscribe = () => () => {};
+
 function fmt(iso: string) {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -42,9 +46,22 @@ function fmt(iso: string) {
 /** 站务管理台：数据看板 + 评论/用户管理（数据来自 /api/v1/admin） */
 export default function AdminDashboard({ lang }: { lang: Lang }) {
   const t = getDict(lang).admin;
-  const nav = getDict(lang);
+  const router = useRouter();
   const user = useSyncExternalStore(subscribeAuth, getAuth, getServerAuth);
   const isAdmin = user?.role === "ADMIN";
+
+  // 认证信息只存在 localStorage 里：SSR / hydration 阶段的快照恒为 null。
+  // 必须等真正落到客户端再判断权限，否则每次刷新管理台都会被误判成未登录而踢回首页。
+  // 用 useSyncExternalStore 的 server/client 快照差异来判断，避免 setState-in-effect。
+  const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
+
+  // 未登录 / 非 ADMIN：直接回首页，不再渲染「请先接入身份认证」空白守卫页。
+  // 这里用 getAuth() 直接读客户端权威值（localStorage 模块缓存），
+  // 不依赖 useSyncExternalStore 的 auth 快照 —— 它在 hydration 阶段恒为 null，会造成误判。
+  useEffect(() => {
+    if (!hydrated) return;
+    if (getAuth()?.role !== "ADMIN") router.replace(`/${lang}`);
+  }, [hydrated, isAdmin, router, lang]);
 
   const [tab, setTab] = useState<"comments" | "users">("comments");
   const [stats, setStats] = useState<{ users: number; comments: number; likes: number; views: number } | null>(null);
@@ -59,6 +76,15 @@ export default function AdminDashboard({ lang }: { lang: Lang }) {
     if (res?.ok) setStats(await res.json());
   }, []);
 
+  /** 错误码 → 本地化文案。res 为 null 表示 authFetch 刷新会话也失败了（本地登录态已清） */
+  const showError = useCallback(
+    (code: string | undefined, res: Response | null) => {
+      const key = code ?? (res === null ? "SESSION_EXPIRED" : "SERVER_ERROR");
+      setError(t.errors[key] ?? t.errors.SERVER_ERROR);
+    },
+    [t],
+  );
+
   const loadComments = useCallback(async () => {
     setBusy(true);
     try {
@@ -69,12 +95,12 @@ export default function AdminDashboard({ lang }: { lang: Lang }) {
         setCommentTotal(data.total);
         setError(null);
       } else {
-        setError(data.code ?? "FORBIDDEN");
+        showError(data.code, res);
       }
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [showError]);
 
   const loadUsers = useCallback(async () => {
     setBusy(true);
@@ -85,12 +111,12 @@ export default function AdminDashboard({ lang }: { lang: Lang }) {
         setUsers(data.items);
         setError(null);
       } else {
-        setError(data.code ?? "FORBIDDEN");
+        showError(data.code, res);
       }
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [showError]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -137,23 +163,9 @@ export default function AdminDashboard({ lang }: { lang: Lang }) {
   };
 
   // ── 守卫 ──
-  if (!user) {
-    return (
-      <div className="admin-guard">
-        <p>{t.needLogin}</p>
-        <Link href={`/${lang}/login`} className="btn-primary">
-          {nav.nexus.login}
-        </Link>
-      </div>
-    );
-  }
-  if (!isAdmin) {
-    return (
-      <div className="admin-guard">
-        <p>{t.needAdmin}</p>
-      </div>
-    );
-  }
+  // 未 hydration（SSR）或权限不足时都不渲染内容；
+  // 权限不足的情况由上面的 effect 重定向回首页（选项 A）。
+  if (!hydrated || !isAdmin) return null;
 
   return (
     <div className="nx-admin">

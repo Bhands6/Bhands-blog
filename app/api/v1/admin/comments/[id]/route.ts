@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getAdminPayload } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { redis } from "@/lib/redis";
 
 const patchSchema = z.object({ status: z.union([z.literal(0), z.literal(1)]) });
@@ -11,10 +11,8 @@ export async function PATCH(
   req: Request,
   ctx: { params: Promise<{ id: string }> },
 ) {
-  const admin = await getAdminPayload(req);
-  if (!admin) {
-    return NextResponse.json({ error: "需要 ADMIN 权限", code: "FORBIDDEN" }, { status: 403 });
-  }
+  const admin = await requireAdmin(req);
+  if ("error" in admin) return admin.error;
   const { id } = await ctx.params;
   if (!/^\d+$/.test(id)) {
     return NextResponse.json({ error: "参数不合法", code: "INVALID_PARAMS" }, { status: 400 });
@@ -42,10 +40,8 @@ export async function DELETE(
   req: Request,
   ctx: { params: Promise<{ id: string }> },
 ) {
-  const admin = await getAdminPayload(req);
-  if (!admin) {
-    return NextResponse.json({ error: "需要 ADMIN 权限", code: "FORBIDDEN" }, { status: 403 });
-  }
+  const admin = await requireAdmin(req);
+  if ("error" in admin) return admin.error;
   const { id } = await ctx.params;
   if (!/^\d+$/.test(id)) {
     return NextResponse.json({ error: "参数不合法", code: "INVALID_PARAMS" }, { status: 400 });

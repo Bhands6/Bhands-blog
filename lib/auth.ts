@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
+import { NextResponse } from "next/server";
 import type { User } from "@prisma/client";
-import type { NextResponse } from "next/server";
 import { redis } from "./redis";
 const ACCESS_TTL = "15m";
 export const REFRESH_TTL_SECONDS = 7 * 24 * 3600;
@@ -118,10 +118,36 @@ export async function getAuthPayload(req: Request): Promise<AccessPayload | null
   return verifyAccessToken(token);
 }
 
-export async function getAdminPayload(req: Request): Promise<AccessPayload | null> {
+/**
+ * ADMIN 守卫：把「未登录 / 登录态过期」(401) 与「已登录但权限不足」(403) 严格分开。
+ *
+ * 必须区分，二者不可混为一谈：前端 authFetch 只在 401 时自动刷新会话并重试。
+ * 若把过期的 access token 也返回 403，管理台会在令牌过期（15 分钟）或
+ * 用户被提升为 ADMIN 前签发的旧令牌下**永久卡在 FORBIDDEN** —— 永远不会触发刷新。
+ *
+ * 用法：`const g = await requireAdmin(req); if ("error" in g) return g.error;`
+ */
+export async function requireAdmin(
+  req: Request,
+): Promise<{ payload: AccessPayload } | { error: NextResponse }> {
   const payload = await getAuthPayload(req);
-  if (!payload || payload.role !== "ADMIN") return null;
-  return payload;
+  if (!payload) {
+    return {
+      error: NextResponse.json(
+        { error: "登录态已失效，请重新登录", code: "SESSION_EXPIRED" },
+        { status: 401 },
+      ),
+    };
+  }
+  if (payload.role !== "ADMIN") {
+    return {
+      error: NextResponse.json(
+        { error: "需要 ADMIN 权限", code: "FORBIDDEN" },
+        { status: 403 },
+      ),
+    };
+  }
+  return { payload };
 }
 
 export function getSessionRefreshToken(req: Request): string | null {
