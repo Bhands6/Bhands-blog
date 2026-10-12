@@ -109,3 +109,15 @@ model Media {
   @@index([uploaderId])
   @@map("media")
 }
+
+// 可供管理员在页面上直接编辑的站点文案，按 key + lang 存一段 JSON。
+// 没有记录时页面回落 lib/i18n.ts 里的默认值 —— 所以这张表为空也不影响渲染。
+model SiteContent {
+  key       String   @db.VarChar(64) // 如 "about"
+  lang      String   @db.Char(2)
+  value     String   @db.Text // JSON
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@id([key, lang])
+  @@map("site_content")
+}

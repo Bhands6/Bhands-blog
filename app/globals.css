@@ -2852,6 +2852,210 @@
     transform: translateX(-3px);
   }
 
+  /* ============================================================
+     关于页：管理员内联编辑
+     ============================================================ */
+  .about-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-mono-nx);
+    font-size: 0.68rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: none;
+    border: 1px solid var(--border-glow);
+    border-radius: 999px;
+    padding: 0.25rem 0.85rem;
+    cursor: pointer;
+    transition: color 0.3s, border-color 0.3s, box-shadow 0.3s;
+  }
+  .about-edit-btn:hover {
+    color: var(--cyan);
+    border-color: var(--border-active);
+    box-shadow: 0 0 12px var(--cyan-dim);
+  }
+
+  /* 弹窗：由 Portal 挂到 body 下，所以这里的 z-index 处在根层叠上下文，
+     能盖住导航栏（z-1000）；若留在 .page-content 内会被作用域化而失效 */
+  .edit-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(3, 1, 8, 0.78);
+    backdrop-filter: blur(4px);
+  }
+  .edit-panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 44rem;
+    max-height: min(88vh, 52rem);
+    background: linear-gradient(180deg, rgba(10, 14, 46, 0.98), rgba(6, 8, 30, 0.98));
+    border: 1px solid var(--border-active);
+    border-radius: 12px;
+    box-shadow:
+      0 0 0 1px var(--border-glow),
+      0 24px 70px rgba(0, 0, 0, 0.6),
+      0 0 44px rgba(0, 240, 255, 0.08);
+    overflow: hidden;
+  }
+  .edit-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-glow);
+  }
+  .edit-head-title {
+    font-family: var(--font-display);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--cyan);
+  }
+  .edit-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.6rem;
+  }
+  .edit-sec {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .edit-sec-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.6rem;
+  }
+  .edit-sec-label {
+    font-family: var(--font-mono-nx);
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .edit-sec-hint {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+  }
+  .edit-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .edit-textarea,
+  .edit-input {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border-glow);
+    border-radius: 6px;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.25s, box-shadow 0.25s;
+  }
+  .edit-textarea {
+    resize: vertical;
+    min-height: 3.2rem;
+  }
+  .edit-input-k {
+    max-width: 9rem;
+    flex-shrink: 0;
+  }
+  .edit-textarea:focus,
+  .edit-input:focus {
+    border-color: var(--border-active);
+    box-shadow: 0 0 0 3px var(--cyan-soft);
+  }
+  .edit-textarea:disabled,
+  .edit-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .edit-icon-btn {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    background: none;
+    border: 1px solid var(--border-glow);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: color 0.25s, border-color 0.25s;
+  }
+  .edit-icon-btn:hover:not(:disabled) {
+    color: var(--red);
+    border-color: var(--red);
+  }
+  .edit-icon-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .edit-add {
+    align-self: flex-start;
+    font-family: var(--font-mono-nx);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    color: var(--text-muted);
+    background: none;
+    border: 1px dashed var(--border-glow);
+    border-radius: 999px;
+    padding: 0.3rem 0.9rem;
+    cursor: pointer;
+    transition: color 0.25s, border-color 0.25s;
+  }
+  .edit-add:hover:not(:disabled) {
+    color: var(--cyan);
+    border-color: var(--border-active);
+  }
+  .edit-add:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .edit-error {
+    margin: 0;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.82rem;
+    color: var(--red);
+    background: rgba(255, 68, 68, 0.08);
+    border: 1px solid rgba(255, 68, 68, 0.35);
+    border-radius: 6px;
+  }
+  .edit-foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--border-glow);
+    background: rgba(3, 4, 18, 0.5);
+  }
+  /* 弹窗底部按钮比首页 CTA 小一号 */
+  .edit-foot .btn-primary,
+  .edit-foot .btn-ghost {
+    padding: 0.6rem 1.6rem;
+    font-size: 0.68rem;
+  }
+
   .article-body {
     font-size: 1rem;
     line-height: 2;
