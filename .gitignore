@@ -44,4 +44,8 @@ next-env.d.ts
 # agent 工作区（本地记忆/日志，不入版本库）
 .workbuddy/
 
+# 生产部署：密钥与数据卷（deploy/env.production.example 是模板，可提交）
+deploy/env.production
+deploy/data/
+
 .vercel
