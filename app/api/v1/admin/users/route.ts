@@ -13,7 +13,9 @@ export async function GET(req: Request) {
   const [total, users] = await Promise.all([
     prisma.user.count(),
     prisma.user.findMany({
-      orderBy: { createdAt: "desc" },
+      // 管理员置顶：Role 枚举为 ADMIN | READER，字母序 ADMIN 恰好在前；
+      // 同级之间仍按注册时间倒序
+      orderBy: [{ role: "asc" }, { createdAt: "desc" }],
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       select: {
