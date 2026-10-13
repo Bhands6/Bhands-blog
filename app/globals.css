@@ -2591,7 +2591,8 @@
   }
   .admin-stat-key {
     font-family: var(--font-mono-nx);
-    font-size: 0.68rem;
+    font-size: 0.78rem;
+    font-weight: 600;
     letter-spacing: 0.3em;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -2604,13 +2605,13 @@
   }
   .admin-tabs button {
     font-family: var(--font-mono-nx);
-    font-size: 0.62rem;
+    font-size: 0.72rem;
     letter-spacing: 0.2em;
     color: var(--text-muted);
     background: var(--bg-input);
     border: 1px solid var(--border-glow);
     border-radius: 999px;
-    padding: 0.45rem 1.2rem;
+    padding: 0.5rem 1.3rem;
     cursor: pointer;
     transition: color 0.3s, border-color 0.3s;
   }
@@ -2638,19 +2639,23 @@
     align-items: center;
     padding: 0.8rem 1.2rem;
     border-bottom: 1px solid var(--border-glow);
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     color: var(--text);
   }
   .admin-row:last-child {
     border-bottom: none;
   }
-  /* 用户表比评论表多一列（操作）：沿用默认的 5 列会把第 6 列挤到第二行 */
+  /* 用户表比评论表多一列（操作）。
+     最后一列不能用 auto：表头和数据行是两个独立的 grid，auto 按各行内容
+     分别计算宽度（表头「操作」二字 ≈27px，数据行两个按钮 ≈104px），
+     两行的列宽就会不同，每一列都对不上。统一用 fr（比例基于同一容器宽）才齐。 */
   .admin-table-users .admin-row {
-    grid-template-columns: 1.4fr 1.6fr 0.75fr 0.5fr 0.75fr auto;
+    grid-template-columns: 1.4fr 1.6fr 0.75fr 0.5fr 0.75fr 1fr;
   }
   .admin-row-head {
     font-family: var(--font-mono-nx);
-    font-size: 0.68rem;
+    font-size: 0.78rem;
+    font-weight: 600;
     letter-spacing: 0.25em;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -2668,7 +2673,7 @@
   .admin-author em {
     font-style: normal;
     font-family: var(--font-mono-nx);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2676,7 +2681,7 @@
   }
   .admin-post {
     font-family: var(--font-mono-nx);
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     color: var(--cyan);
     text-decoration: none;
     overflow: hidden;
@@ -2689,7 +2694,7 @@
   }
   .admin-time {
     font-family: var(--font-mono-nx);
-    font-size: 0.6rem;
+    font-size: 0.72rem;
     letter-spacing: 0.08em;
     color: var(--text-muted);
   }
@@ -2699,13 +2704,13 @@
   }
   .admin-actions button {
     font-family: var(--font-mono-nx);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     letter-spacing: 0.15em;
     color: var(--cyan);
     background: none;
     border: 1px solid var(--border-glow);
     border-radius: 4px;
-    padding: 0.25rem 0.6rem;
+    padding: 0.3rem 0.7rem;
     cursor: pointer;
     transition: color 0.3s, border-color 0.3s;
     white-space: nowrap;
@@ -2721,9 +2726,9 @@
   }
   .status-badge {
     font-family: var(--font-mono-nx);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     letter-spacing: 0.15em;
-    padding: 0.15rem 0.5rem;
+    padding: 0.18rem 0.55rem;
     border: 1px solid;
     white-space: nowrap;
   }
@@ -2752,7 +2757,7 @@
   .admin-total {
     padding: 0.7rem 1.2rem;
     font-family: var(--font-mono-nx);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     letter-spacing: 0.2em;
     color: var(--text-muted);
     border-top: 1px solid var(--border-glow);
