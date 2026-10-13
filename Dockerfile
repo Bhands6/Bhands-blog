@@ -10,18 +10,24 @@
 FROM node:22-slim AS deps
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN apt-get update -y \
+# 国内服务器用阿里云内网镜像源装系统依赖（免流量、快）
+RUN sed -i 's|deb.debian.org|mirrors.cloud.aliyuncs.com|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null; \
+    apt-get update -y \
  && apt-get install -y --no-install-recommends openssl ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
 # postinstall 钩子会执行 prisma generate（schema 已随上面的 COPY 就位）
-RUN npm ci
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+RUN npm ci --registry=$NPM_REGISTRY --no-audit --no-fund
 
 FROM node:22-slim AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN apt-get update -y \
+# 2G 内存机器的关键保险：不给 V8 无限堆内存，否则构建期 swap 抖动会把整台机器拖死
+ENV NODE_OPTIONS=--max-old-space-size=1280
+RUN sed -i 's|deb.debian.org|mirrors.cloud.aliyuncs.com|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null; \
+    apt-get update -y \
  && apt-get install -y --no-install-recommends openssl ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 COPY --from=deps /app/node_modules ./node_modules
