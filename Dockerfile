@@ -10,9 +10,10 @@
 FROM node:22-slim AS deps
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
+# apt 源带自动回退：优先阿里云 ECS 内网镜像（仅阿里云机器可解析），失败退回官方源
 # 国内服务器用阿里云内网镜像源装系统依赖（免流量、快）
-RUN sed -i 's|deb.debian.org|mirrors.cloud.aliyuncs.com|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null; \
-    apt-get update -y \
+RUN sed -i 's|deb.debian.org|mirrors.cloud.aliyuncs.com|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true; \
+    (apt-get update -y || (sed -i 's|mirrors.cloud.aliyuncs.com|deb.debian.org|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && apt-get update -y)) \
  && apt-get install -y --no-install-recommends openssl ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
@@ -26,8 +27,8 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 # 2G 内存机器的关键保险：不给 V8 无限堆内存，否则构建期 swap 抖动会把整台机器拖死
 ENV NODE_OPTIONS=--max-old-space-size=1280
-RUN sed -i 's|deb.debian.org|mirrors.cloud.aliyuncs.com|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null; \
-    apt-get update -y \
+RUN sed -i 's|deb.debian.org|mirrors.cloud.aliyuncs.com|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true; \
+    (apt-get update -y || (sed -i 's|mirrors.cloud.aliyuncs.com|deb.debian.org|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && apt-get update -y)) \
  && apt-get install -y --no-install-recommends openssl ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 COPY --from=deps /app/node_modules ./node_modules
