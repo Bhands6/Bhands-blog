@@ -7,7 +7,10 @@
 #   runner  ：仅带运行时所需文件，非 root 运行
 # ---------------------------------------------------------------------------
 
-FROM node:22-slim AS deps
+# 运行时版本钉死：修复 CVE-2026-111497（Brotli 解码器越界写 → RCE，CVSS 9.2）
+# 受影响范围 22.0.0 ≤ node < 22.23.4；浮动 tag node:22-slim 曾把线上带到 22.23.3。
+# 升级时三处 FROM 必须同步改，并核对 Debian codename 是否有变（当前 bookworm）。
+FROM node:22.23.4-bookworm-slim AS deps
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 # apt 源带自动回退：优先阿里云 ECS 内网镜像（仅阿里云机器可解析），失败退回官方源
@@ -22,7 +25,7 @@ COPY prisma ./prisma
 ARG NPM_REGISTRY=https://registry.npmmirror.com
 RUN npm ci --registry=$NPM_REGISTRY --no-audit --no-fund
 
-FROM node:22-slim AS builder
+FROM node:22.23.4-bookworm-slim AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 # 2G 内存机器的关键保险：不给 V8 无限堆内存，否则构建期 swap 抖动会把整台机器拖死
@@ -42,7 +45,7 @@ ARG NEXT_PUBLIC_SITE_URL
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 RUN npm run build
 
-FROM node:22-slim AS runner
+FROM node:22.23.4-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000
 RUN apt-get update -y \
